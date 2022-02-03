@@ -33,7 +33,7 @@ evalProgramOnText ∷ [Either Text Text] → Text
 evalProgramOnText = foldl' (\acc x → either (<> acc) (acc <>) x) mempty
 
 evalProgramOnBuilder ∷ [Either Text Text] → Text
-evalProgramOnBuilder xs = runBuilder $ \b → linearFoldl' go b xs
+evalProgramOnBuilder xs = runBuilder $ \b → unBuilder (linearFoldl' go b xs)
   where
     go ∷ Builder ⊸ Either Text Text → Builder
     go b (Left x) = x <>. b

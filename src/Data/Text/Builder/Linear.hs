@@ -5,12 +5,16 @@
 
 module Data.Text.Builder.Linear
   ( Builder
+  , unBuilder
   , runBuilder
+  , dupBuilder
   , (.<>)
   , (<>.)
+  , (.<>.)
   ) where
 
 import Data.Text ()
+import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
@@ -21,14 +25,23 @@ import Unsafe.Coerce
 -- | Builder for Text based on linear types.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuilder $ \b -> "foo" <>. (b .<> "bar")
+-- >>> runBuilder $ \b -> unBuilder ("foo" <>. (b .<> "bar"))
 -- "foobar"
 --
-newtype Builder = Builder { unBuilder ∷ Text }
+newtype Builder = Builder Text
+
+unBuilder ∷ Builder ⊸ Text
+unBuilder (Builder x) = x
 
 -- | Run a function on an empty builder, producing text.
-runBuilder ∷ (Builder ⊸ Builder) → Text
-runBuilder f = unBuilder (f (Builder mempty))
+runBuilder ∷ (Builder ⊸ a) → a
+runBuilder f = f (Builder mempty)
+
+dupBuilder ∷ Builder ⊸ (Builder, Builder)
+dupBuilder = unsafeCoerce dup
+
+dup ∷ Builder → (Builder, Builder)
+dup (Builder x) = (Builder x, Builder (T.copy x))
 
 -- | Append text to a buffer.
 (.<>) ∷ Builder ⊸ Text → Builder
@@ -75,3 +88,8 @@ unsafePrepend (Text src srcOff srcLen) (Builder (Text dst@(ByteArray dst#) dstOf
 unsafeThaw ∷ Array → ST s (MArray s)
 unsafeThaw (ByteArray a) = ST $ \s# →
   (# s#, MutableByteArray (unsafeCoerce# a) #)
+
+-- | Concatenate buffers.
+(.<>.) ∷ Builder ⊸ Builder ⊸ Builder
+(.<>.) = unsafeCoerce undefined
+infix 6 .<>.

@@ -30,7 +30,7 @@ benchBuilder = TL.toStrict . TLB.toLazyText . go txtB
     go !acc n = go (txtB <> (acc <> txtB)) (n - 1)
 
 benchLinearBuilder ∷ Int → Text
-benchLinearBuilder n = runBuilder (\b → go (b .<> txt) n)
+benchLinearBuilder n = unBuilder (runBuilder (\b → go (b .<> txt) n))
   where
     go ∷ Builder ⊸ Int → Builder
     go !acc 0 = acc
