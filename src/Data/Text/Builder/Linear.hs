@@ -68,24 +68,18 @@ import Data.Text.Internal.Unsafe.Char (unsafeWrite)
 -- and run them on an empty 'Builder' to extract results.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuilder $ \b → unBuilder ('!' .<| "foo" <| (b |> "bar" |>. '.'))
+-- >>> runBuilder $ \b → '!' .<| "foo" <| (b |> "bar" |>. '.')
 -- "!foobar."
 --
 newtype Builder = Builder Text
 
 -- | Unwrap 'Builder', no-op.
--- Usually the last action inside 'runBuilder'.
 unBuilder ∷ Builder ⊸ Text
 unBuilder (Builder x) = x
 
 -- | Run a linear function on an empty 'Builder', producing 'Text'.
--- Typical invocation is
---
--- > runBuilder $ \b -> unBuilder (f b)
---
--- where @f@ :: 'Builder' ⊸ 'Builder' is a composition of '|>', '|>.', '<|', '.<|'.
-runBuilder ∷ (Builder ⊸ a) → a
-runBuilder f = f (Builder mempty)
+runBuilder ∷ (Builder ⊸ Builder) → Text
+runBuilder f = unBuilder (f (Builder mempty))
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
 --
@@ -98,7 +92,7 @@ runBuilder f = f (Builder mempty)
 -- Instead write:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuilder $ \b → unBuilder ((\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b))
+-- >>> runBuilder $ \b → (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b)
 -- "foobar"
 --
 dupBuilder ∷ Builder ⊸ (Builder, Builder)

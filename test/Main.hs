@@ -77,11 +77,11 @@ main = defaultMain $ testGroup "All"
 
 prop1 ∷ [Action] → Property
 prop1 acts = interpretOnText acts ===
-  runBuilder (\b → unBuilder (interpretOnBuilder acts b))
+  runBuilder (\b → interpretOnBuilder acts b)
 
 prop2 ∷ [Action] → [Action] → Property
 prop2 acts1 acts2 = interpretOnText acts1 <> interpretOnText acts2 ===
-  runBuilder (\b → unBuilder (go (dupBuilder b)))
+  runBuilder (\b → go (dupBuilder b))
   where
     go ∷ (Builder, Builder) ⊸ Builder
     go (b1, b2) = interpretOnBuilder acts1 b1 >< interpretOnBuilder acts2 b2
