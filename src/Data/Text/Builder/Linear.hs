@@ -107,8 +107,8 @@ dup (Builder x) = (Builder x, Builder (T.copy x))
 infixl 6 |>
 
 unsafeAppend ∷ Builder → Text → Builder
-unsafeAppend (Builder (Text dst@(ByteArray dst#) dstOff dstLen)) (Text src srcOff srcLen) = runST $ do
-  let dstFullLen = I# (sizeofByteArray# dst#)
+unsafeAppend (Builder (Text dst dstOff dstLen)) (Text src srcOff srcLen) = runST $ do
+  let dstFullLen = sizeofByteArray dst
       newLen = dstLen + srcLen
       newFullLen = dstOff + 2 * newLen
   newM ← if dstOff + newLen <= dstFullLen
@@ -127,8 +127,8 @@ unsafeAppend (Builder (Text dst@(ByteArray dst#) dstOff dstLen)) (Text src srcOf
 infixl 6 |>.
 
 unsafeAppendChar ∷ Builder → Char → Builder
-unsafeAppendChar (Builder (Text dst@(ByteArray dst#) dstOff dstLen)) ch = runST $ do
-  let dstFullLen = I# (sizeofByteArray# dst#)
+unsafeAppendChar (Builder (Text dst dstOff dstLen)) ch = runST $ do
+  let dstFullLen = sizeofByteArray dst
       maxSrcLen = 4
       newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
   newM ← if dstOff + dstLen + maxSrcLen <= dstFullLen
@@ -147,14 +147,14 @@ unsafeAppendChar (Builder (Text dst@(ByteArray dst#) dstOff dstLen)) ch = runST 
 infixr 6 <|
 
 unsafePrepend ∷ Text → Builder → Builder
-unsafePrepend (Text src srcOff srcLen) (Builder (Text dst@(ByteArray dst#) dstOff dstLen))
+unsafePrepend (Text src srcOff srcLen) (Builder (Text dst dstOff dstLen))
   | srcLen <= dstOff = runST $ do
     newM ← unsafeThaw dst
     A.copyI srcLen newM (dstOff - srcLen) src srcOff
     new ← A.unsafeFreeze newM
     pure $ Builder $ Text new (dstOff - srcLen) (srcLen + dstLen)
   | otherwise = runST $ do
-    let dstFullLen = I# (sizeofByteArray# dst#)
+    let dstFullLen = sizeofByteArray dst
         newLen = dstLen + srcLen
         newFullLen = 2 * newLen + (dstFullLen - dstOff - dstLen)
     newM ← A.new newFullLen
@@ -169,14 +169,14 @@ unsafePrepend (Text src srcOff srcLen) (Builder (Text dst@(ByteArray dst#) dstOf
 infixr 6 .<|
 
 unsafePrependChar ∷ Char → Builder → Builder
-unsafePrependChar ch (Builder (Text dst@(ByteArray dst#) dstOff dstLen))
+unsafePrependChar ch (Builder (Text dst dstOff dstLen))
   | maxSrcLen <= dstOff = runST $ do
     newM ← unsafeThaw dst
     srcLen ← unsafePrependCharM newM dstOff ch
     new ← A.unsafeFreeze newM
     pure $ Builder $ Text new (dstOff - srcLen) (srcLen + dstLen)
   | otherwise = runST $ do
-    let dstFullLen = I# (sizeofByteArray# dst#)
+    let dstFullLen = sizeofByteArray dst
         newOff = dstLen + maxSrcLen
         newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
     newM ← A.new newFullLen
@@ -190,6 +190,9 @@ unsafePrependChar ch (Builder (Text dst@(ByteArray dst#) dstOff dstLen))
 unsafeThaw ∷ Array → ST s (MArray s)
 unsafeThaw (ByteArray a) = ST $ \s# →
   (# s#, MutableByteArray (unsafeCoerce# a) #)
+
+sizeofByteArray :: Array -> Int
+sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
 
 -- | Similar to 'Data.Text.Internal.Unsafe.Char.unsafeWrite',
 -- but writes _before_ a given offset.
@@ -224,9 +227,9 @@ unsafePrependCharM marr i c = case utf8Length c of
 infix 6 ><
 
 unsafeConcat ∷ Builder → Builder → Builder
-unsafeConcat (Builder (Text left@(ByteArray left#) leftOff leftLen)) (Builder (Text right@(ByteArray right#) rightOff rightLen)) = runST $ do
-  let leftFullLen = I# (sizeofByteArray# left#)
-      rightFullLen = I# (sizeofByteArray# right#)
+unsafeConcat (Builder (Text left leftOff leftLen)) (Builder (Text right rightOff rightLen)) = runST $ do
+  let leftFullLen = sizeofByteArray left
+      rightFullLen = sizeofByteArray right
       canCopyToLeft = leftOff + leftLen + rightLen <= leftFullLen
       canCopyToRight = leftLen <= rightOff
       shouldCopyToLeft = canCopyToLeft && (not canCopyToRight || leftLen >= rightLen)
