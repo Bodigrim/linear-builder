@@ -1,2 +1,4 @@
 - ignore:
     name: Use tuple-section
+- ignore:
+    name: Avoid lambda

@@ -14,7 +14,7 @@ import Data.Foldable
 import qualified Data.Text as T
 import Data.Text.Internal (Text(..))
 import Test.Tasty
-import Test.Tasty.QuickCheck
+import Test.Tasty.QuickCheck hiding ((><))
 
 instance Arbitrary Text where
   arbitrary = do
@@ -29,15 +29,38 @@ instance Arbitrary Text where
       ys = T.unpack (Text arr 0 (off + len))
       d  = length ys - length xs
 
-evalProgramOnText ∷ [Either Text Text] → Text
-evalProgramOnText = foldl' (\acc x → either (<> acc) (acc <>) x) mempty
+data Action
+  = AppendText Text
+  | PrependText Text
+  | AppendChar Char
+  | PrependChar Char
+  deriving (Eq, Ord, Show)
 
-evalProgramOnBuilder ∷ [Either Text Text] → Text
-evalProgramOnBuilder xs = runBuilder $ \b → unBuilder (linearFoldl' go b xs)
+instance Arbitrary Action where
+  arbitrary = oneof
+    [ AppendText  <$> arbitrary
+    , PrependText <$> arbitrary
+    , AppendChar  <$> arbitraryUnicodeChar
+    , PrependChar <$> arbitraryUnicodeChar
+    ]
+
+interpretOnText ∷ [Action] → Text
+interpretOnText = foldl' go mempty
   where
-    go ∷ Builder ⊸ Either Text Text → Builder
-    go b (Left x) = x <>. b
-    go b (Right x) = b .<> x
+    go ∷ Text → Action → Text
+    go b (AppendText  x) = b <> x
+    go b (PrependText x) = x <> b
+    go b (AppendChar  x) = T.snoc b x
+    go b (PrependChar x) = T.cons x b
+
+interpretOnBuilder ∷ [Action] → Builder ⊸ Builder
+interpretOnBuilder xs z = linearFoldl' go z xs
+  where
+    go ∷ Builder ⊸ Action → Builder
+    go b (AppendText  x) = b |> x
+    go b (PrependText x) = x <| b
+    go b (AppendChar  x) = b |>. x
+    go b (PrependChar x) = x .<| b
 
 linearFoldl' ∷ forall a b. (b ⊸ a → b) → b ⊸ [a] → b
 linearFoldl' f = go
@@ -47,6 +70,18 @@ linearFoldl' f = go
     go !acc (x : xs) = go (f acc x) xs
 
 main ∷ IO ()
-main = defaultMain $
-  testProperty "evaluate" $
-    \prog → evalProgramOnText prog === evalProgramOnBuilder prog
+main = defaultMain $ testGroup "All"
+  [ testProperty "sequence of actions" prop1
+  , testProperty "two sequences of actions" prop2
+  ]
+
+prop1 ∷ [Action] → Property
+prop1 acts = interpretOnText acts ===
+  runBuilder (\b → unBuilder (interpretOnBuilder acts b))
+
+prop2 ∷ [Action] → [Action] → Property
+prop2 acts1 acts2 = interpretOnText acts1 <> interpretOnText acts2 ===
+  runBuilder (\b → unBuilder (go (dupBuilder b)))
+  where
+    go ∷ (Builder, Builder) ⊸ Builder
+    go (b1, b2) = interpretOnBuilder acts1 b1 >< interpretOnBuilder acts2 b2
