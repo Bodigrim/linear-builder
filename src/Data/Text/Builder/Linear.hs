@@ -57,8 +57,8 @@ import Data.Text.Internal (Text(..))
 import GHC.Exts
 import GHC.ST
 import Unsafe.Coerce
-import Data.Text.Internal.Encoding.Utf8 (utf8Length)
-import Data.Text.Internal.Unsafe.Char (unsafeWrite)
+import Data.Text.Internal.Encoding.Utf8 (utf8Length, ord2, ord3, ord4)
+import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
 
 -- | Internally 'Builder' is a mutable buffer.
 -- If a client gets hold of a variable of type 'Builder',
@@ -172,8 +172,7 @@ unsafePrependChar ∷ Char → Builder → Builder
 unsafePrependChar ch (Builder (Text dst@(ByteArray dst#) dstOff dstLen))
   | maxSrcLen <= dstOff = runST $ do
     newM ← unsafeThaw dst
-    let srcLen = utf8Length ch
-    _ ← unsafeWrite newM (dstOff - srcLen) ch
+    srcLen ← unsafePrependCharM newM dstOff ch
     new ← A.unsafeFreeze newM
     pure $ Builder $ Text new (dstOff - srcLen) (srcLen + dstLen)
   | otherwise = runST $ do
@@ -191,6 +190,33 @@ unsafePrependChar ch (Builder (Text dst@(ByteArray dst#) dstOff dstLen))
 unsafeThaw ∷ Array → ST s (MArray s)
 unsafeThaw (ByteArray a) = ST $ \s# →
   (# s#, MutableByteArray (unsafeCoerce# a) #)
+
+-- | Similar to 'Data.Text.Internal.Unsafe.Char.unsafeWrite',
+-- but writes _before_ a given offset.
+unsafePrependCharM :: A.MArray s -> Int -> Char -> ST s Int
+unsafePrependCharM marr i c = case utf8Length c of
+  1 -> do
+    let n0 = fromIntegral (ord c)
+    A.unsafeWrite marr (i - 1) n0
+    pure 1
+  2 -> do
+    let (n0, n1) = ord2 c
+    A.unsafeWrite marr (i - 2) n0
+    A.unsafeWrite marr (i - 1) n1
+    pure 2
+  3 -> do
+    let (n0, n1, n2) = ord3 c
+    A.unsafeWrite marr (i - 3) n0
+    A.unsafeWrite marr (i - 2) n1
+    A.unsafeWrite marr (i - 1) n2
+    pure 3
+  _ -> do
+    let (n0, n1, n2, n3) = ord4 c
+    A.unsafeWrite marr (i - 4) n0
+    A.unsafeWrite marr (i - 3) n1
+    A.unsafeWrite marr (i - 2) n2
+    A.unsafeWrite marr (i - 1) n3
+    pure 4
 
 -- | Concatenate two 'Builder's, potentially mutating both of them.
 (><) ∷ Builder ⊸ Builder ⊸ Builder
