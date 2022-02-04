@@ -31,7 +31,7 @@ benchLinearBuilder n = runBuilder (\b → go (b |> txt) n)
     go !acc n = go (txt <| (acc |> txt)) (n - 1)
 
 main ∷ IO ()
-main = defaultMain $ map mkGroup [1e2, 1e3, 1e4, 1e5, 1e6]
+main = defaultMain $ map mkGroup [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
 
 mkGroup :: Int -> Benchmark
 mkGroup n = bgroup (show n)
