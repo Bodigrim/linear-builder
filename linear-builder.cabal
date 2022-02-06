@@ -25,6 +25,7 @@ library
   ghc-options: -Wall -O2 -fexpose-all-unfoldings
   default-extensions:
     BangPatterns
+    GADTs
     LinearTypes
     MagicHash
     UnboxedTuples

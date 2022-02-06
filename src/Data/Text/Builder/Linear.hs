@@ -71,7 +71,8 @@ import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
 -- >>> runBuilder $ \b → '!' .<| "foo" <| (b |> "bar" |>. '.')
 -- "!foobar."
 --
-newtype Builder = Builder Text
+data Builder where
+  Builder :: Text -> Builder
 
 -- | Unwrap 'Builder', no-op.
 unBuilder ∷ Builder ⊸ Text
@@ -96,18 +97,12 @@ runBuilder f = unBuilder (f (Builder mempty))
 -- "foobar"
 --
 dupBuilder ∷ Builder ⊸ (Builder, Builder)
-dupBuilder = unsafeCoerce dup
-
-dup ∷ Builder → (Builder, Builder)
-dup (Builder x) = (Builder x, Builder (T.copy x))
+dupBuilder (Builder x) = (Builder x, Builder (T.copy x))
 
 -- | Append 'Text' to a 'Builder' by mutating it.
 (|>) ∷ Builder ⊸ Text → Builder
-(|>) = unsafeCoerce unsafeAppend
 infixl 6 |>
-
-unsafeAppend ∷ Builder → Text → Builder
-unsafeAppend (Builder (Text dst dstOff dstLen)) (Text src srcOff srcLen) = runST $ do
+Builder (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Builder $ runST $ do
   let dstFullLen = sizeofByteArray dst
       newLen = dstLen + srcLen
       newFullLen = dstOff + 2 * newLen
@@ -119,7 +114,7 @@ unsafeAppend (Builder (Text dst dstOff dstLen)) (Text src srcOff srcLen) = runST
       pure tmpM
   A.copyI srcLen newM (dstOff + dstLen) src srcOff
   new ← A.unsafeFreeze newM
-  pure $ Builder $ Text new dstOff newLen
+  pure $ Text new dstOff newLen
 
 -- | Append 'Char' to a 'Builder' by mutating it.
 (|>.) ∷ Builder ⊸ Char → Builder
@@ -143,25 +138,21 @@ unsafeAppendChar (Builder (Text dst dstOff dstLen)) ch = runST $ do
 
 -- | Prepend 'Text' to a 'Builder' by mutating it.
 (<|) ∷ Text → Builder ⊸ Builder
-(<|) = unsafeCoerce unsafePrepend
 infixr 6 <|
-
-unsafePrepend ∷ Text → Builder → Builder
-unsafePrepend (Text src srcOff srcLen) (Builder (Text dst dstOff dstLen))
-  | srcLen <= dstOff = runST $ do
-    newM ← unsafeThaw dst
-    A.copyI srcLen newM (dstOff - srcLen) src srcOff
-    new ← A.unsafeFreeze newM
-    pure $ Builder $ Text new (dstOff - srcLen) (srcLen + dstLen)
-  | otherwise = runST $ do
-    let dstFullLen = sizeofByteArray dst
-        newLen = dstLen + srcLen
-        newFullLen = 2 * newLen + (dstFullLen - dstOff - dstLen)
-    newM ← A.new newFullLen
-    A.copyI srcLen newM newLen src srcOff
-    A.copyI dstLen newM (newLen + srcLen) dst dstOff
-    new ← A.unsafeFreeze newM
-    pure $ Builder $ Text new newLen newLen
+Text src srcOff srcLen <| Builder (Text dst dstOff dstLen) = Builder $ case () of
+  () | srcLen <= dstOff ->
+    (\new -> Text new (dstOff - srcLen) (srcLen + dstLen)) $ runST $ do
+      newM ← unsafeThaw dst
+      A.copyI srcLen newM (dstOff - srcLen) src srcOff
+      A.unsafeFreeze newM
+  () | otherwise -> let newLen = dstLen + srcLen in
+    (\new -> Text new newLen newLen) $ runST $ do
+      let dstFullLen = sizeofByteArray dst
+          newFullLen = 2 * newLen + (dstFullLen - dstOff - dstLen)
+      newM ← A.new newFullLen
+      A.copyI srcLen newM newLen src srcOff
+      A.copyI dstLen newM (newLen + srcLen) dst dstOff
+      A.unsafeFreeze newM
 
 -- | Prepend 'Char' to a 'Builder' by mutating it.
 (.<|) ∷ Char → Builder ⊸ Builder
