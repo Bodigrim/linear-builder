@@ -43,8 +43,10 @@ module Data.Text.Builder.Linear
   , dupBuilder
   , (|>)
   , (|>.)
+  , (|>#)
   , (<|)
   , (.<|)
+  , (<|#)
   , (><)
   , liftText
   ) where
@@ -54,10 +56,10 @@ import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
-import GHC.Exts
-import GHC.ST
 import Data.Text.Internal.Encoding.Utf8 (utf8Length, ord2, ord3, ord4)
 import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
+import GHC.Exts
+import GHC.ST
 
 -- | Internally 'Builder' is a mutable buffer.
 -- If a client gets hold of a variable of type 'Builder',
@@ -78,7 +80,7 @@ unBuilder ∷ Builder ⊸ Text
 unBuilder (Builder x) = x
 
 -- | Run a linear function on an empty 'Builder', producing 'Text'.
-runBuilder ∷ (Builder ⊸ Builder) ⊸ Text
+runBuilder ∷ (Builder ⊸ Builder) -> Text
 runBuilder f = unBuilder (f (Builder mempty))
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
@@ -237,3 +239,51 @@ Builder (Text left leftOff leftLen) >< Builder (Text right rightOff rightLen) = 
 -- any linear functions at all.
 liftText ∷ (Text ⊸ Text) → (Builder ⊸ Builder)
 liftText f (Builder x) = Builder (f x)
+
+-- | Append a statically known null-terminated ASCII string (cf. 'unpackCString#')
+-- to a 'Builder' by mutating it. E. g.,
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
+-- >>> let bar# = "bar"# in runBuilder $ \b → "foo" <| (b |># bar#)
+-- "foobar"
+--
+(|>#) ∷ Builder ⊸ Addr# → Builder
+infixl 6 |>#
+Builder (Text dst dstOff dstLen) |># addr# = Builder $ runST $ do
+  let dstFullLen = sizeofByteArray dst
+      srcLen = I# (cstringLength# addr#)
+      newLen = dstLen + srcLen
+      newFullLen = dstOff + 2 * newLen
+  newM ← if dstOff + newLen <= dstFullLen
+    then unsafeThaw dst
+    else do
+      tmpM ← A.new newFullLen
+      A.copyI dstLen tmpM dstOff dst dstOff
+      pure tmpM
+  A.copyFromPointer newM (dstOff + dstLen) (Ptr addr#) srcLen
+  new ← A.unsafeFreeze newM
+  pure $ Text new dstOff newLen
+
+-- | Prepend a statically known null-terminated ASCII string (cf. 'unpackCString#')
+-- to a 'Builder' by mutating it. E. g.,
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
+-- >>> let foo# = "foo"# in runBuilder $ \b → foo# <|# (b |> "bar")
+-- "foobar"
+--
+(<|#) ∷ Addr# → Builder ⊸ Builder
+infixr 6 <|#
+addr# <|# Builder (Text dst dstOff dstLen) = let srcLen = I# (cstringLength# addr#) in  Builder $ case () of
+  () | srcLen <= dstOff ->
+    (\new -> Text new (dstOff - srcLen) (srcLen + dstLen)) $ runST $ do
+      newM ← unsafeThaw dst
+      A.copyFromPointer newM (dstOff - srcLen) (Ptr addr#) srcLen
+      A.unsafeFreeze newM
+  () | otherwise -> let newLen = dstLen + srcLen in
+    (\new -> Text new newLen newLen) $ runST $ do
+      let dstFullLen = sizeofByteArray dst
+          newFullLen = 2 * newLen + (dstFullLen - dstOff - dstLen)
+      newM ← A.new newFullLen
+      A.copyFromPointer newM newLen (Ptr addr#) srcLen
+      A.copyI dstLen newM (newLen + srcLen) dst dstOff
+      A.unsafeFreeze newM

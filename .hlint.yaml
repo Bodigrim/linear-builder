@@ -2,3 +2,5 @@
     name: Use tuple-section
 - ignore:
     name: Avoid lambda
+- ignore:
+    name: Redundant lambda

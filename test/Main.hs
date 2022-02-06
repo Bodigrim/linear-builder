@@ -73,6 +73,8 @@ main ∷ IO ()
 main = defaultMain $ testGroup "All"
   [ testProperty "sequence of actions" prop1
   , testProperty "two sequences of actions" prop2
+  , testProperty "append addr#" prop3
+  , testProperty "prepend addr#" prop4
   ]
 
 prop1 ∷ [Action] → Property
@@ -85,3 +87,19 @@ prop2 acts1 acts2 = interpretOnText acts1 <> interpretOnText acts2 ===
   where
     go ∷ (Builder, Builder) ⊸ Builder
     go (b1, b2) = interpretOnBuilder acts1 b1 >< interpretOnBuilder acts2 b2
+
+prop3 :: [Action] -> Property
+prop3 acts = runBuilder f1 === runBuilder f2
+  where
+    addr# = "foo"#
+    f1, f2 :: Builder ⊸ Builder
+    f1 = \b -> interpretOnBuilder acts b |># addr#
+    f2 = \b -> interpretOnBuilder acts b |> T.pack "foo"
+
+prop4 :: [Action] -> Property
+prop4 acts = runBuilder f1 === runBuilder f2
+  where
+    addr# = "foo"#
+    f1, f2 :: Builder ⊸ Builder
+    f1 = \b -> addr# <|# interpretOnBuilder acts b
+    f2 = \b -> T.pack "foo" <| interpretOnBuilder acts b
