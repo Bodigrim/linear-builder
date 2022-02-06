@@ -78,8 +78,11 @@ import GHC.ST
 -- and run them on an empty 'Builder' to extract results.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuilder $ \b → '!' .<| "foo" <| (b |> "bar" |>. '.')
+-- >>> runBuilder (\b → '!' .<| "foo" <| (b |> "bar" |>. '.'))
 -- "!foobar."
+--
+-- Remember: this is a strict builder, so on contrary to 'Data.Text.Lazy.Builder.Builder'
+-- for optimal performance you should use strict left folds instead of lazy right ones.
 --
 data Builder where
   Builder :: !Text -> Builder
@@ -91,7 +94,11 @@ unBuilder ∷ Builder ⊸ Text
 unBuilder (Builder x) = x
 
 -- | Run a linear function on an empty 'Builder', producing 'Text'.
-runBuilder ∷ (Builder ⊸ Builder) -> Text
+--
+-- Be careful to write @runBuilder (\b -> ...)@ instead of @runBuilder $ \b -> ...@,
+-- because current implementation of linear types lacks special support for '($)'.
+--
+runBuilder ∷ (Builder ⊸ Builder) ⊸ Text
 runBuilder f = unBuilder (f (Builder mempty))
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
@@ -105,13 +112,19 @@ runBuilder f = unBuilder (f (Builder mempty))
 -- Instead write:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuilder $ \b → (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b)
+-- >>> runBuilder (\b → (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b))
 -- "foobar"
 --
 dupBuilder ∷ Builder ⊸ (Builder, Builder)
 dupBuilder (Builder x) = (Builder x, Builder (T.copy x))
 
--- | Append 'Text' to a 'Builder' by mutating it.
+-- | Append 'Text' suffix to a 'Builder' by mutating it.
+-- If a suffix is statically known, consider using '(|>#)' for optimal performance.
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes
+-- >>> runBuilder (\b → b |> "foo" |> "bar")
+-- "foobar"
+--
 (|>) ∷ Builder ⊸ Text → Builder
 infixl 6 |>
 Builder (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Builder $ runST $ do
@@ -129,6 +142,11 @@ Builder (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Builder $ runST $
   pure $ Text new dstOff newLen
 
 -- | Append 'Char' to a 'Builder' by mutating it.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuilder (\b → b |>. 'q' |>. 'w')
+-- "qw"
+--
 (|>.) ∷ Builder ⊸ Char → Builder
 infixl 6 |>.
 Builder (Text dst dstOff dstLen) |>. ch = runST $ do
@@ -145,7 +163,13 @@ Builder (Text dst dstOff dstLen) |>. ch = runST $ do
   new ← A.unsafeFreeze newM
   pure $ Builder $ Text new dstOff (dstLen + srcLen)
 
--- | Prepend 'Text' to a 'Builder' by mutating it.
+-- | Prepend 'Text' prefix to a 'Builder' by mutating it.
+-- If a prefix is statically known, consider using '(<|#)' for optimal performance.
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes
+-- >>> runBuilder (\b → "foo" <| "bar" <| b)
+-- "foobar"
+--
 (<|) ∷ Text → Builder ⊸ Builder
 infixr 6 <|
 Text src srcOff srcLen <| Builder (Text dst dstOff dstLen) = Builder $ case () of
@@ -164,6 +188,11 @@ Text src srcOff srcLen <| Builder (Text dst dstOff dstLen) = Builder $ case () o
       A.unsafeFreeze newM
 
 -- | Prepend 'Char' to a 'Builder' by mutating it.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuilder (\b → 'q' .<| 'w' .<| b)
+-- "qw"
+--
 (.<|) ∷ Char → Builder ⊸ Builder
 infixr 6 .<|
 ch .<| Builder (Text dst dstOff dstLen)
@@ -223,7 +252,7 @@ unsafePrependCharM marr i c = case utf8Length c of
 -- You likely need to use 'dupBuilder' to get hold on two builders at once:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuilder $ \b → (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b)
+-- >>> runBuilder (\b → (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b))
 -- "foobar"
 --
 (><) ∷ Builder ⊸ Builder ⊸ Builder
@@ -262,7 +291,7 @@ liftText f (Builder x) = Builder (f x)
 -- to a 'Builder' by mutating it. E. g.,
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
--- >>> let bar# = "bar"# in runBuilder $ \b → "foo" <| (b |># bar#)
+-- >>> let bar# = "bar"# in runBuilder (\b → "foo" <| (b |># bar#))
 -- "foobar"
 --
 (|>#) ∷ Builder ⊸ Addr# → Builder
@@ -286,7 +315,7 @@ Builder (Text dst dstOff dstLen) |># addr# = Builder $ runST $ do
 -- to a 'Builder' by mutating it. E. g.,
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
--- >>> let foo# = "foo"# in runBuilder $ \b → foo# <|# (b |> "bar")
+-- >>> let foo# = "foo"# in runBuilder (\b → foo# <|# (b |> "bar"))
 -- "foobar"
 --
 (<|#) ∷ Addr# → Builder ⊸ Builder
