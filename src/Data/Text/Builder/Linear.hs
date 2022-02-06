@@ -56,7 +56,6 @@ import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
 import GHC.Exts
 import GHC.ST
-import Unsafe.Coerce
 import Data.Text.Internal.Encoding.Utf8 (utf8Length, ord2, ord3, ord4)
 import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
 
@@ -72,14 +71,14 @@ import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
 -- "!foobar."
 --
 data Builder where
-  Builder :: Text -> Builder
+  Builder :: !Text -> Builder
 
 -- | Unwrap 'Builder', no-op.
 unBuilder ∷ Builder ⊸ Text
 unBuilder (Builder x) = x
 
 -- | Run a linear function on an empty 'Builder', producing 'Text'.
-runBuilder ∷ (Builder ⊸ Builder) → Text
+runBuilder ∷ (Builder ⊸ Builder) ⊸ Text
 runBuilder f = unBuilder (f (Builder mempty))
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
@@ -118,11 +117,8 @@ Builder (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Builder $ runST $
 
 -- | Append 'Char' to a 'Builder' by mutating it.
 (|>.) ∷ Builder ⊸ Char → Builder
-(|>.) = unsafeCoerce unsafeAppendChar
 infixl 6 |>.
-
-unsafeAppendChar ∷ Builder → Char → Builder
-unsafeAppendChar (Builder (Text dst dstOff dstLen)) ch = runST $ do
+Builder (Text dst dstOff dstLen) |>. ch = runST $ do
   let dstFullLen = sizeofByteArray dst
       maxSrcLen = 4
       newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
@@ -156,11 +152,8 @@ Text src srcOff srcLen <| Builder (Text dst dstOff dstLen) = Builder $ case () o
 
 -- | Prepend 'Char' to a 'Builder' by mutating it.
 (.<|) ∷ Char → Builder ⊸ Builder
-(.<|) = unsafeCoerce unsafePrependChar
 infixr 6 .<|
-
-unsafePrependChar ∷ Char → Builder → Builder
-unsafePrependChar ch (Builder (Text dst dstOff dstLen))
+ch .<| Builder (Text dst dstOff dstLen)
   | maxSrcLen <= dstOff = runST $ do
     newM ← unsafeThaw dst
     srcLen ← unsafePrependCharM newM dstOff ch
@@ -214,11 +207,8 @@ unsafePrependCharM marr i c = case utf8Length c of
 
 -- | Concatenate two 'Builder's, potentially mutating both of them.
 (><) ∷ Builder ⊸ Builder ⊸ Builder
-(><) = unsafeCoerce unsafeConcat
 infix 6 ><
-
-unsafeConcat ∷ Builder → Builder → Builder
-unsafeConcat (Builder (Text left leftOff leftLen)) (Builder (Text right rightOff rightLen)) = runST $ do
+Builder (Text left leftOff leftLen) >< Builder (Text right rightOff rightLen) = runST $ do
   let leftFullLen = sizeofByteArray left
       rightFullLen = sizeofByteArray right
       canCopyToLeft = leftOff + leftLen + rightLen <= leftFullLen
