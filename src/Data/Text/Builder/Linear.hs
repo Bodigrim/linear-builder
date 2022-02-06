@@ -48,7 +48,6 @@
 
 module Data.Text.Builder.Linear
   ( Builder
-  , unBuilder
   , runBuilder
   , dupBuilder
   , (|>)
@@ -86,6 +85,8 @@ data Builder where
   Builder :: !Text -> Builder
 
 -- | Unwrap 'Builder', no-op.
+-- Most likely, this is not the function you're looking for
+-- and you need 'runBuilder' instead.
 unBuilder ∷ Builder ⊸ Text
 unBuilder (Builder x) = x
 
@@ -218,6 +219,13 @@ unsafePrependCharM marr i c = case utf8Length c of
     pure 4
 
 -- | Concatenate two 'Builder's, potentially mutating both of them.
+--
+-- You likely need to use 'dupBuilder' to get hold on two builders at once:
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes
+-- >>> runBuilder $ \b → (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuilder b)
+-- "foobar"
+--
 (><) ∷ Builder ⊸ Builder ⊸ Builder
 infix 6 ><
 Builder (Text left leftOff leftLen) >< Builder (Text right rightOff rightLen) = runST $ do
