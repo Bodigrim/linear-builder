@@ -2,7 +2,9 @@
 
 _Linear types for linear times!_
 
-Builder for strict `Text`, based on linear types. It's consistently outperforms `Data.Text.Lazy.toStrict . Data.Text.Lazy.Builder.toLazyText` and scales better:
+Builder for strict `Text`, based on linear types. It's consistently
+outperforms `Data.Text.Lazy.toStrict . Data.Text.Lazy.Builder.toLazyText`
+and scales better:
 
 ```
 1

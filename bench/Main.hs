@@ -24,9 +24,9 @@ benchBuilder = TL.toStrict . TLB.toLazyText . go txtB
     go !acc n = go (txtB <> (acc <> txtB)) (n - 1)
 
 benchLinearBuilder ∷ Int → Text
-benchLinearBuilder n = runBuilder (\b → go (b |> txt) n)
+benchLinearBuilder n = runBuffer (\b → go (b |> txt) n)
   where
-    go ∷ Builder ⊸ Int → Builder
+    go ∷ Buffer ⊸ Int → Buffer
     go !acc 0 = acc
     go !acc n = go (txt <| (acc |> txt)) (n - 1)
 

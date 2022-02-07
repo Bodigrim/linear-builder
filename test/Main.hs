@@ -53,10 +53,10 @@ interpretOnText = foldl' go mempty
     go b (AppendChar  x) = T.snoc b x
     go b (PrependChar x) = T.cons x b
 
-interpretOnBuilder ∷ [Action] → Builder ⊸ Builder
-interpretOnBuilder xs z = linearFoldl' go z xs
+interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
+interpretOnBuffer xs z = linearFoldl' go z xs
   where
-    go ∷ Builder ⊸ Action → Builder
+    go ∷ Buffer ⊸ Action → Buffer
     go b (AppendText  x) = b |> x
     go b (PrependText x) = x <| b
     go b (AppendChar  x) = b |>. x
@@ -79,27 +79,27 @@ main = defaultMain $ testGroup "All"
 
 prop1 ∷ [Action] → Property
 prop1 acts = interpretOnText acts ===
-  runBuilder (\b → interpretOnBuilder acts b)
+  runBuffer (\b → interpretOnBuffer acts b)
 
 prop2 ∷ [Action] → [Action] → Property
 prop2 acts1 acts2 = interpretOnText acts1 <> interpretOnText acts2 ===
-  runBuilder (\b → go (dupBuilder b))
+  runBuffer (\b → go (dupBuffer b))
   where
-    go ∷ (Builder, Builder) ⊸ Builder
-    go (b1, b2) = interpretOnBuilder acts1 b1 >< interpretOnBuilder acts2 b2
+    go ∷ (Buffer, Buffer) ⊸ Buffer
+    go (b1, b2) = interpretOnBuffer acts1 b1 >< interpretOnBuffer acts2 b2
 
 prop3 :: [Action] -> Property
-prop3 acts = runBuilder f1 === runBuilder f2
+prop3 acts = runBuffer f1 === runBuffer f2
   where
     addr# = "foo"#
-    f1, f2 :: Builder ⊸ Builder
-    f1 = \b -> interpretOnBuilder acts b |># addr#
-    f2 = \b -> interpretOnBuilder acts b |> T.pack "foo"
+    f1, f2 :: Buffer ⊸ Buffer
+    f1 = \b -> interpretOnBuffer acts b |># addr#
+    f2 = \b -> interpretOnBuffer acts b |> T.pack "foo"
 
 prop4 :: [Action] -> Property
-prop4 acts = runBuilder f1 === runBuilder f2
+prop4 acts = runBuffer f1 === runBuffer f2
   where
     addr# = "foo"#
-    f1, f2 :: Builder ⊸ Builder
-    f1 = \b -> addr# <|# interpretOnBuilder acts b
-    f2 = \b -> T.pack "foo" <| interpretOnBuilder acts b
+    f1, f2 :: Buffer ⊸ Buffer
+    f1 = \b -> addr# <|# interpretOnBuffer acts b
+    f2 = \b -> T.pack "foo" <| interpretOnBuffer acts b
