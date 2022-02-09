@@ -152,11 +152,12 @@ fromAddr x = Builder $ \b -> b |># x
 -- Remember: this is a strict builder, so on contrary to 'Data.Text.Lazy.Builder.Buffer'
 -- for optimal performance you should use strict left folds instead of lazy right ones.
 --
+#if MIN_VERSION_base(4,16,0)
+data Buffer :: TYPE ('BoxedRep 'Unlifted) where
+#else
 data Buffer where
+#endif
   Buffer :: {-# UNPACK #-} !Text -> Buffer
-
-instance Show Buffer where
-  show (Buffer x) = show x
 
 -- | Unwrap 'Buffer', no-op.
 -- Most likely, this is not the function you're looking for
@@ -176,18 +177,18 @@ runBuffer f = unBuffer (f (Buffer mempty))
 --
 -- It is a bit tricky to use because of
 -- <https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/linear_types.html#limitations current limitations>
--- of linear types with regards to @let@ and @where@. E. .g, one cannot write
+-- of linear types with regards to @let@ and @where@. E. g., one cannot write
 --
--- > let (b1, b2) = dupBuffer b in ("foo" <| b1) >< (b2 |> "bar")
+-- > let (# b1, b2 #) = dupBuffer b in ("foo" <| b1) >< (b2 |> "bar")
 --
 -- Instead write:
 --
--- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuffer (\b -> (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
+-- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
-dupBuffer ∷ Buffer ⊸ (Buffer, Buffer)
-dupBuffer (Buffer x) = (Buffer x, Buffer (T.copy x))
+dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
+dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 
 -- | Append 'Text' suffix to a 'Buffer' by mutating it.
 -- If a suffix is statically known, consider using '(|>#)' for optimal performance.
@@ -220,7 +221,7 @@ Buffer (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Buffer $ runST $ d
 --
 (|>.) ∷ Buffer ⊸ Char → Buffer
 infixl 6 |>.
-Buffer (Text dst dstOff dstLen) |>. ch = runST $ do
+Buffer (Text dst dstOff dstLen) |>. ch = Buffer $ runST $ do
   let dstFullLen = sizeofByteArray dst
       maxSrcLen = 4
       newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
@@ -232,7 +233,7 @@ Buffer (Text dst dstOff dstLen) |>. ch = runST $ do
       pure tmpM
   srcLen ← unsafeWrite newM (dstOff + dstLen) ch
   new ← A.unsafeFreeze newM
-  pure $ Buffer $ Text new dstOff (dstLen + srcLen)
+  pure $ Text new dstOff (dstLen + srcLen)
 
 -- | Prepend 'Text' prefix to a 'Buffer' by mutating it.
 -- If a prefix is statically known, consider using '(<|#)' for optimal performance.
@@ -267,12 +268,12 @@ Text src srcOff srcLen <| Buffer (Text dst dstOff dstLen) = Buffer $ case () of
 (.<|) ∷ Char → Buffer ⊸ Buffer
 infixr 6 .<|
 ch .<| Buffer (Text dst dstOff dstLen)
-  | maxSrcLen <= dstOff = runST $ do
+  | maxSrcLen <= dstOff = Buffer $ runST $ do
     newM ← unsafeThaw dst
     srcLen ← unsafePrependCharM newM dstOff ch
     new ← A.unsafeFreeze newM
-    pure $ Buffer $ Text new (dstOff - srcLen) (srcLen + dstLen)
-  | otherwise = runST $ do
+    pure $ Text new (dstOff - srcLen) (srcLen + dstLen)
+  | otherwise = Buffer $ runST $ do
     let dstFullLen = sizeofByteArray dst
         newOff = dstLen + maxSrcLen
         newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
@@ -280,7 +281,7 @@ ch .<| Buffer (Text dst dstOff dstLen)
     srcLen ← unsafeWrite newM newOff ch
     A.copyI dstLen newM (newOff + srcLen) dst dstOff
     new ← A.unsafeFreeze newM
-    pure $ Buffer $ Text new newOff (dstLen + srcLen)
+    pure $ Text new newOff (dstLen + srcLen)
   where
     maxSrcLen = 4
 
@@ -322,13 +323,13 @@ unsafePrependCharM marr i c = case utf8Length c of
 --
 -- You likely need to use 'dupBuffer' to get hold on two builders at once:
 --
--- >>> :set -XOverloadedStrings -XLinearTypes
--- >>> runBuffer (\b -> (\(b1, b2) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
+-- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
 (><) ∷ Buffer ⊸ Buffer ⊸ Buffer
 infix 6 ><
-Buffer (Text left leftOff leftLen) >< Buffer (Text right rightOff rightLen) = runST $ do
+Buffer (Text left leftOff leftLen) >< Buffer (Text right rightOff rightLen) = Buffer $ runST $ do
   let leftFullLen = sizeofByteArray left
       rightFullLen = sizeofByteArray right
       canCopyToLeft = leftOff + leftLen + rightLen <= leftFullLen
@@ -338,19 +339,19 @@ Buffer (Text left leftOff leftLen) >< Buffer (Text right rightOff rightLen) = ru
     newM ← unsafeThaw left
     A.copyI rightLen newM (leftOff + leftLen) right rightOff
     new ← A.unsafeFreeze newM
-    pure $ Buffer $ Text new leftOff (leftLen + rightLen)
+    pure $ Text new leftOff (leftLen + rightLen)
   else if canCopyToRight then do
     newM ← unsafeThaw right
     A.copyI leftLen newM (rightOff - leftLen) left leftOff
     new ← A.unsafeFreeze newM
-    pure $ Buffer $ Text new (rightOff - leftLen) (leftLen + rightLen)
+    pure $ Text new (rightOff - leftLen) (leftLen + rightLen)
   else do
     let fullLen = leftOff + leftLen + rightLen + (rightFullLen - rightOff - rightLen)
     newM ← A.new fullLen
     A.copyI leftLen newM leftOff left leftOff
     A.copyI rightLen newM (leftOff + leftLen) right rightOff
     new ← A.unsafeFreeze newM
-    pure $ Buffer $ Text new leftOff (leftLen + rightLen)
+    pure $ Text new leftOff (leftLen + rightLen)
 
 -- | Lift a linear function on 'Text' to 'Buffer's.
 -- This is not very useful at the moment, because @text@ does not provide

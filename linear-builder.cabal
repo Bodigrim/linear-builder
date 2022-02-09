@@ -24,13 +24,18 @@ common stanza
   ghc-options: -Wall
   default-extensions:
     BangPatterns
+    CPP
     GADTs
+    KindSignatures
     LinearTypes
     MagicHash
     NumDecimals
     ScopedTypeVariables
     UnboxedTuples
     UnicodeSyntax
+  if impl(ghc >= 9.2)
+    default-extensions:
+      UnliftedDatatypes
 
 library
   import: stanza

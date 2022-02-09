@@ -58,10 +58,9 @@ interpretOnBuffer xs z = linearFoldl' go z xs
     go b (AppendChar  x) = b |>. x
     go b (PrependChar x) = x .<| b
 
-linearFoldl' ∷ forall a b. (b ⊸ a → b) → b ⊸ [a] → b
+linearFoldl' ∷ (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
 linearFoldl' f = go
   where
-    go ∷ b ⊸ [a] → b
     go !acc [] = acc
     go !acc (x : xs) = go (f acc x) xs
 
@@ -81,8 +80,8 @@ prop2 ∷ [Action] → [Action] → Property
 prop2 acts1 acts2 = interpretOnText acts1 <> interpretOnText acts2 ===
   runBuffer (\b → go (dupBuffer b))
   where
-    go ∷ (Buffer, Buffer) ⊸ Buffer
-    go (b1, b2) = interpretOnBuffer acts1 b1 >< interpretOnBuffer acts2 b2
+    go ∷ (# Buffer, Buffer #) ⊸ Buffer
+    go (# b1, b2 #) = interpretOnBuffer acts1 b1 >< interpretOnBuffer acts2 b2
 
 prop3 :: [Action] -> Property
 prop3 acts = runBuffer f1 === runBuffer f2
