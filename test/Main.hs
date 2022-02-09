@@ -3,10 +3,6 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 
-{-# LANGUAGE ScopedTypeVariables #-}
-
-{-# OPTIONS_GHC -Wno-orphans #-}
-
 module Main where
 
 import Data.Text.Builder.Linear

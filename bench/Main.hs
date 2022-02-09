@@ -11,7 +11,6 @@ import Data.Text.Builder.Linear
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
 import Test.Tasty.Bench
-import Test.Tasty.QuickCheck
 
 txt ∷ Text
 txt = T.pack "Haskell + Linear Types = ♡"
@@ -24,7 +23,7 @@ benchBuilder = TL.toStrict . TLB.toLazyText . go txtB
     go !acc n = go (txtB <> (acc <> txtB)) (n - 1)
 
 benchLinearBuilder ∷ Int → Text
-benchLinearBuilder n = runBuffer (\b → go (b |> txt) n)
+benchLinearBuilder m = runBuffer (\b → go (b |> txt) m)
   where
     go ∷ Buffer ⊸ Int → Buffer
     go !acc 0 = acc
