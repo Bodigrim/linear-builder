@@ -153,7 +153,7 @@ fromAddr x = Builder $ \b -> b |># x
 -- for optimal performance you should use strict left folds instead of lazy right ones.
 --
 data Buffer where
-  Buffer :: !Text -> Buffer
+  Buffer :: {-# UNPACK #-} !Text -> Buffer
 
 instance Show Buffer where
   show (Buffer x) = show x
@@ -393,7 +393,7 @@ Buffer (Text dst dstOff dstLen) |># addr# = Buffer $ runST $ do
 -- The literal string must not contain zero bytes @\\0@, this condition is not checked.
 (<|#) ∷ Addr# → Buffer ⊸ Buffer
 infixr 6 <|#
-addr# <|# Buffer (Text dst dstOff dstLen) = let srcLen = I# (cstringLength# addr#) in  Buffer $ case () of
+addr# <|# Buffer (Text dst dstOff dstLen) = let srcLen = I# (cstringLength# addr#) in Buffer $ case () of
   () | srcLen <= dstOff ->
     (\new -> Text new (dstOff - srcLen) (srcLen + dstLen)) $ runST $ do
       newM ← unsafeThaw dst
