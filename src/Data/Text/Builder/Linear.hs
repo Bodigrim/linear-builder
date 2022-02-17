@@ -58,6 +58,12 @@ module Data.Text.Builder.Linear
   , (.<|)
   , (<|#)
   , (><)
+  , (|>$)
+  , ($<|)
+  , (|>%)
+  , (%<|)
+  , (|>&)
+  , (&<|)
   , liftText
     -- * Builder
   , Builder(..)
@@ -65,8 +71,12 @@ module Data.Text.Builder.Linear
   , fromText
   , fromChar
   , fromAddr
+  , fromDec
+  , fromHex
+  , fromDouble
   ) where
 
+import Data.Bits
 import Data.Text ()
 import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
@@ -137,6 +147,18 @@ fromChar x = Builder $ \b -> b |>. x
 fromAddr :: Addr# -> Builder
 fromAddr x = Builder $ \b -> b |># x
 {-# INLINE fromAddr #-}
+
+fromDec :: FiniteBits a => a -> Builder
+fromDec x = Builder $ \b -> b |>$ x
+{-# INLINE fromDec #-}
+
+fromHex :: FiniteBits a => a -> Builder
+fromHex x = Builder $ \b -> b |>& x
+{-# INLINE fromHex #-}
+
+fromDouble :: Double -> Builder
+fromDouble x = Builder $ \b -> b |>% x
+{-# INLINE fromDouble #-}
 
 -- | Internally 'Buffer' is a mutable buffer.
 -- If a client gets hold of a variable of type 'Buffer',
@@ -408,3 +430,27 @@ addr# <|# Buffer (Text dst dstOff dstLen) = let srcLen = I# (cstringLength# addr
       A.copyFromPointer newM newLen (Ptr addr#) srcLen
       A.copyI dstLen newM (newLen + srcLen) dst dstOff
       A.unsafeFreeze newM
+
+-- | Append decimal number.
+(|>$) :: FiniteBits a => Buffer ⊸ a -> Buffer
+(|>$) = undefined
+
+-- | Prepend decimal number.
+($<|) :: FiniteBits a => a -> Buffer ⊸ Buffer
+($<|) = undefined
+
+-- | Append double.
+(|>%) :: Buffer ⊸ Double -> Buffer
+(|>%) = undefined
+
+-- | Prepend double
+(%<|) :: Double -> Buffer ⊸ Buffer
+(%<|) = undefined
+
+-- | Append hexadecimal number.
+(|>&) :: FiniteBits a => Buffer ⊸ a -> Buffer
+(|>&) = undefined
+
+-- | Prepend hexadecimal number.
+(&<|) :: FiniteBits a => a -> Buffer ⊸ Buffer
+(&<|) = undefined
