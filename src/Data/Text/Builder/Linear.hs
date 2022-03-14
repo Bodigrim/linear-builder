@@ -77,6 +77,7 @@ module Data.Text.Builder.Linear
   ) where
 
 import Data.Bits
+import Data.Foldable (forM_)
 import Data.Text ()
 import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
@@ -148,11 +149,11 @@ fromAddr :: Addr# -> Builder
 fromAddr x = Builder $ \b -> b |># x
 {-# INLINE fromAddr #-}
 
-fromDec :: FiniteBits a => a -> Builder
+fromDec :: (Integral a, FiniteBits a) => a -> Builder
 fromDec x = Builder $ \b -> b |>$ x
 {-# INLINE fromDec #-}
 
-fromHex :: FiniteBits a => a -> Builder
+fromHex :: (Integral a, FiniteBits a) => a -> Builder
 fromHex x = Builder $ \b -> b |>& x
 {-# INLINE fromHex #-}
 
@@ -317,28 +318,28 @@ sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
 -- | Similar to 'Data.Text.Internal.Unsafe.Char.unsafeWrite',
 -- but writes _before_ a given offset.
 unsafePrependCharM :: A.MArray s -> Int -> Char -> ST s Int
-unsafePrependCharM marr i c = case utf8Length c of
+unsafePrependCharM marr off c = case utf8Length c of
   1 -> do
     let n0 = fromIntegral (ord c)
-    A.unsafeWrite marr (i - 1) n0
+    A.unsafeWrite marr (off - 1) n0
     pure 1
   2 -> do
     let (n0, n1) = ord2 c
-    A.unsafeWrite marr (i - 2) n0
-    A.unsafeWrite marr (i - 1) n1
+    A.unsafeWrite marr (off - 2) n0
+    A.unsafeWrite marr (off - 1) n1
     pure 2
   3 -> do
     let (n0, n1, n2) = ord3 c
-    A.unsafeWrite marr (i - 3) n0
-    A.unsafeWrite marr (i - 2) n1
-    A.unsafeWrite marr (i - 1) n2
+    A.unsafeWrite marr (off - 3) n0
+    A.unsafeWrite marr (off - 2) n1
+    A.unsafeWrite marr (off - 1) n2
     pure 3
   _ -> do
     let (n0, n1, n2, n3) = ord4 c
-    A.unsafeWrite marr (i - 4) n0
-    A.unsafeWrite marr (i - 3) n1
-    A.unsafeWrite marr (i - 2) n2
-    A.unsafeWrite marr (i - 1) n3
+    A.unsafeWrite marr (off - 4) n0
+    A.unsafeWrite marr (off - 3) n1
+    A.unsafeWrite marr (off - 2) n2
+    A.unsafeWrite marr (off - 1) n3
     pure 4
 
 -- | Concatenate two 'Buffer's, potentially mutating both of them.
@@ -433,24 +434,83 @@ addr# <|# Buffer (Text dst dstOff dstLen) = let srcLen = I# (cstringLength# addr
 
 -- | Append decimal number.
 (|>$) :: FiniteBits a => Buffer ⊸ a -> Buffer
+infixl 6 |>$
 (|>$) = undefined
 
 -- | Prepend decimal number.
 ($<|) :: FiniteBits a => a -> Buffer ⊸ Buffer
+infixr 6 $<|
 ($<|) = undefined
 
 -- | Append double.
 (|>%) :: Buffer ⊸ Double -> Buffer
+infixl 6 |>%
 (|>%) = undefined
 
 -- | Prepend double
 (%<|) :: Double -> Buffer ⊸ Buffer
+infixr 6 %<|
 (%<|) = undefined
 
 -- | Append hexadecimal number.
-(|>&) :: FiniteBits a => Buffer ⊸ a -> Buffer
-(|>&) = undefined
+(|>&) :: (Integral a, FiniteBits a) => Buffer ⊸ a -> Buffer
+infixl 6 |>&
+Buffer (Text dst dstOff dstLen) |>& n = Buffer $ runST $ do
+  let dstFullLen = sizeofByteArray dst
+      maxSrcLen = finiteBitSize n
+      newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
+  newM ← if dstOff + dstLen + maxSrcLen <= dstFullLen
+    then unsafeThaw dst
+    else do
+      tmpM ← A.new newFullLen
+      A.copyI dstLen tmpM dstOff dst dstOff
+      pure tmpM
+  srcLen ← unsafeAppendHex newM (dstOff + dstLen) n
+  new ← A.unsafeFreeze newM
+  pure $ Text new dstOff (dstLen + srcLen)
 
 -- | Prepend hexadecimal number.
-(&<|) :: FiniteBits a => a -> Buffer ⊸ Buffer
-(&<|) = undefined
+(&<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
+infixr 6 &<|
+n &<| Buffer (Text dst dstOff dstLen)
+  | maxSrcLen <= dstOff = Buffer $ runST $ do
+    newM ← unsafeThaw dst
+    srcLen ← unsafePrependHex newM dstOff n
+    new ← A.unsafeFreeze newM
+    pure $ Text new (dstOff - srcLen) (srcLen + dstLen)
+  | otherwise = Buffer $ runST $ do
+    let dstFullLen = sizeofByteArray dst
+        newOff = dstLen + maxSrcLen
+        newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
+    newM ← A.new newFullLen
+    srcLen ← unsafePrependHex newM newOff n
+    A.copyI dstLen newM (newOff + srcLen) dst dstOff
+    new ← A.unsafeFreeze newM
+    pure $ Text new newOff (dstLen + srcLen)
+  where
+    maxSrcLen = finiteBitSize n
+
+unsafeAppendHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
+unsafeAppendHex marr off n = do
+  let len = lengthAsHex n
+  forM_ [0 .. len - 1] $ \i ->
+    let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf in
+      writeNibbleAsHex marr (off + i) (fromIntegral nibble)
+  pure len
+
+unsafePrependHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
+unsafePrependHex marr off n = do
+  let len = lengthAsHex n
+  forM_ [0 .. len - 1] $ \i ->
+    let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf in
+      writeNibbleAsHex marr (off + i) (fromIntegral nibble)
+  pure len
+
+-- TODO handle lengthAsHex 0 = 1
+lengthAsHex :: FiniteBits a => a -> Int
+lengthAsHex n = (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
+
+writeNibbleAsHex :: A.MArray s -> Int -> Int -> ST s ()
+writeNibbleAsHex marr off n@(I# n#) = A.unsafeWrite marr off (fromIntegral hex)
+  where
+    hex = 48 + n + I# (n# ># 9#) * 39
