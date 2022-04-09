@@ -79,16 +79,14 @@ module Data.Text.Builder.Linear
   ) where
 
 import Data.Bits
-import Data.Foldable (forM_)
 import Data.Text ()
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
-import Data.Text.Internal.Encoding.Utf8 (utf8Length, ord2, ord3, ord4)
-import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
 import GHC.Exts
-import GHC.ST
 
+import Data.Text.Builder.Linear.Char
 import Data.Text.Builder.Linear.Core
+import Data.Text.Builder.Linear.Hex
 
 -- | Thin wrapper over 'Buffer' with a handy 'Semigroup' instance.
 --
@@ -195,16 +193,6 @@ buffer |> (Text src srcOff srcLen) = appendExact
   (\dst dstOff -> A.copyI srcLen dst dstOff src srcOff)
   buffer
 
--- | Append 'Char' to a 'Buffer' by mutating it.
---
--- >>> :set -XLinearTypes
--- >>> runBuffer (\b -> b |>. 'q' |>. 'w')
--- "qw"
---
-(|>.) ∷ Buffer ⊸ Char → Buffer
-infixl 6 |>.
-buffer |>. ch = appendBounded 4 (\dst dstOff -> unsafeWrite dst dstOff ch) buffer
-
 -- | Prepend 'Text' prefix to a 'Buffer' by mutating it.
 -- If a prefix is statically known, consider using '(<|#)' for optimal performance.
 --
@@ -218,47 +206,6 @@ Text src srcOff srcLen <| buffer = prependExact
   srcLen
   (\dst dstOff -> A.copyI srcLen dst dstOff src srcOff)
   buffer
-
--- | Prepend 'Char' to a 'Buffer' by mutating it.
---
--- >>> :set -XLinearTypes
--- >>> runBuffer (\b -> 'q' .<| 'w' .<| b)
--- "qw"
---
-(.<|) ∷ Char → Buffer ⊸ Buffer
-infixr 6 .<|
-ch .<| buffer = prependBounded
-  4
-  (\dst dstOff -> unsafePrependCharM dst dstOff ch)
-  (\dst dstOff -> unsafeWrite dst dstOff ch)
-  buffer
-
--- | Similar to 'Data.Text.Internal.Unsafe.Char.unsafeWrite',
--- but writes _before_ a given offset.
-unsafePrependCharM :: A.MArray s -> Int -> Char -> ST s Int
-unsafePrependCharM marr off c = case utf8Length c of
-  1 -> do
-    let n0 = fromIntegral (ord c)
-    A.unsafeWrite marr (off - 1) n0
-    pure 1
-  2 -> do
-    let (n0, n1) = ord2 c
-    A.unsafeWrite marr (off - 2) n0
-    A.unsafeWrite marr (off - 1) n1
-    pure 2
-  3 -> do
-    let (n0, n1, n2) = ord3 c
-    A.unsafeWrite marr (off - 3) n0
-    A.unsafeWrite marr (off - 2) n1
-    A.unsafeWrite marr (off - 1) n2
-    pure 3
-  _ -> do
-    let (n0, n1, n2, n3) = ord4 c
-    A.unsafeWrite marr (off - 4) n0
-    A.unsafeWrite marr (off - 3) n1
-    A.unsafeWrite marr (off - 2) n2
-    A.unsafeWrite marr (off - 1) n3
-    pure 4
 
 -- | Append a null-terminated UTF-8 string
 -- to a 'Buffer' by mutating it. E. g.,
@@ -313,48 +260,3 @@ infixl 6 |>%
 (%<|) :: Double -> Buffer ⊸ Buffer
 infixr 6 %<|
 (%<|) = undefined
-
--- | Append hexadecimal number.
-(|>&) :: (Integral a, FiniteBits a) => Buffer ⊸ a -> Buffer
-infixl 6 |>&
-buffer |>& n = appendBounded
-  (finiteBitSize n `shiftR` 2)
-  (\dst dstOff -> unsafeAppendHex dst dstOff n)
-  buffer
-
--- | Prepend hexadecimal number.
-(&<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
-infixr 6 &<|
-n &<| buffer = prependBounded
-  (finiteBitSize n `shiftR` 2)
-  (\dst dstOff -> unsafePrependHex dst dstOff n)
-  (\dst dstOff -> unsafeAppendHex dst dstOff n)
-  buffer
-
-unsafeAppendHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
-unsafeAppendHex marr off n = do
-  let len = lengthAsHex n
-  forM_ [0 .. len - 1] $ \i ->
-    let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf in
-      writeNibbleAsHex marr (off + i) (fromIntegral nibble)
-  pure len
-
-unsafePrependHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
-unsafePrependHex marr off n = do
-  let len = lengthAsHex n
-  forM_ [0 .. len - 1] $ \i ->
-    let nibble = (n `shiftR` (i `shiftL` 2)) .&. 0xf in
-      writeNibbleAsHex marr (off - 1 - i) (fromIntegral nibble)
-  pure len
-
-lengthAsHex :: FiniteBits a => a -> Int
-lengthAsHex n = max1 $ (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
-
--- Branchless equivalent for max 1 n.
-max1 :: Int -> Int
-max1 n@(I# n#) = n `xor` I# (n# <=# 0#)
-
-writeNibbleAsHex :: A.MArray s -> Int -> Int -> ST s ()
-writeNibbleAsHex marr off n@(I# n#) = A.unsafeWrite marr off (fromIntegral hex)
-  where
-    hex = 48 + n + I# (n# ># 9#) * 39
