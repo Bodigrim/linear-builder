@@ -3,12 +3,18 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 
+{-# LANGUAGE DeriveGeneric #-}
+
 module Main where
 
 import Data.Text.Builder.Linear
 import Data.Foldable
 import qualified Data.Text as T
+import qualified Data.Text.Lazy.Builder.Int as TLBI
 import Data.Text.Internal (Text(..))
+import Data.Text.Lazy (toStrict)
+import Data.Text.Lazy.Builder (toLazyText)
+import GHC.Generics
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding ((><))
 
@@ -30,7 +36,9 @@ data Action
   | PrependText Text
   | AppendChar Char
   | PrependChar Char
-  deriving (Eq, Ord, Show)
+  | AppendHex Word
+  | PrependHex Word
+  deriving (Eq, Ord, Show, Generic)
 
 instance Arbitrary Action where
   arbitrary = oneof
@@ -38,7 +46,10 @@ instance Arbitrary Action where
     , PrependText <$> arbitrary
     , AppendChar  <$> arbitraryUnicodeChar
     , PrependChar <$> arbitraryUnicodeChar
+    , AppendHex   <$> arbitraryBoundedIntegral
+    , PrependHex  <$> arbitraryBoundedIntegral
     ]
+  shrink = genericShrink
 
 interpretOnText ∷ [Action] → Text
 interpretOnText = foldl' go mempty
@@ -48,6 +59,8 @@ interpretOnText = foldl' go mempty
     go b (PrependText x) = x <> b
     go b (AppendChar  x) = T.snoc b x
     go b (PrependChar x) = T.cons x b
+    go b (AppendHex   x) = b <> toStrict (toLazyText (TLBI.hexadecimal x))
+    go b (PrependHex  x) = toStrict (toLazyText (TLBI.hexadecimal x)) <> b
 
 interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
 interpretOnBuffer xs z = linearFoldl' go z xs
@@ -57,6 +70,8 @@ interpretOnBuffer xs z = linearFoldl' go z xs
     go b (PrependText x) = x <| b
     go b (AppendChar  x) = b |>. x
     go b (PrependChar x) = x .<| b
+    go b (AppendHex   x) = b |>& x
+    go b (PrependHex  x) = x &<| b
 
 linearFoldl' ∷ (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
 linearFoldl' f = go

@@ -447,10 +447,9 @@ infixr 6 %<|
 (|>&) :: (Integral a, FiniteBits a) => Buffer ⊸ a -> Buffer
 infixl 6 |>&
 buffer |>& n = appendBounded
-  (finiteBitSize n)
+  (finiteBitSize n `shiftR` 2)
   (\dst dstOff -> unsafeAppendHex dst dstOff n)
   buffer
--- TODO allocate less than finiteBitSize n
 
 -- | Prepend hexadecimal number.
 (&<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
@@ -466,7 +465,7 @@ n &<| Buffer (Text dst dstOff dstLen)
         newOff = dstLen + maxSrcLen
         newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
     newM ← A.new newFullLen
-    srcLen ← unsafePrependHex newM newOff n
+    srcLen ← unsafeAppendHex newM newOff n
     A.copyI dstLen newM (newOff + srcLen) dst dstOff
     new ← A.unsafeFreeze newM
     pure $ Text new newOff (dstLen + srcLen)
@@ -485,13 +484,16 @@ unsafePrependHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s
 unsafePrependHex marr off n = do
   let len = lengthAsHex n
   forM_ [0 .. len - 1] $ \i ->
-    let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf in
-      writeNibbleAsHex marr (off + i) (fromIntegral nibble)
+    let nibble = (n `shiftR` (i `shiftL` 2)) .&. 0xf in
+      writeNibbleAsHex marr (off - 1 - i) (fromIntegral nibble)
   pure len
 
--- TODO handle lengthAsHex 0 = 1
 lengthAsHex :: FiniteBits a => a -> Int
-lengthAsHex n = (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
+lengthAsHex n = max1 $ (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
+
+-- Branchless equivalent for max 1 n.
+max1 :: Int -> Int
+max1 n@(I# n#) = n `xor` I# (n# <=# 0#)
 
 writeNibbleAsHex :: A.MArray s -> Int -> Int -> ST s ()
 writeNibbleAsHex marr off n@(I# n#) = A.unsafeWrite marr off (fromIntegral hex)
