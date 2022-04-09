@@ -1,3 +1,4 @@
+{-# LANGUAGE RankNTypes #-}
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
 -- Licence:     BSD3
@@ -213,6 +214,25 @@ runBuffer f = unBuffer (f (Buffer mempty))
 dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 
+appendBounded :: Int -> (forall s. MArray s -> Int -> ST s Int) -> Buffer ⊸ Buffer
+appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ runST $ do
+  let dstFullLen = sizeofByteArray dst
+      newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
+  newM ← if dstOff + dstLen + maxSrcLen <= dstFullLen
+    then unsafeThaw dst
+    else do
+      tmpM ← A.new newFullLen
+      A.copyI dstLen tmpM dstOff dst dstOff
+      pure tmpM
+  srcLen ← appender newM (dstOff + dstLen)
+  new ← A.unsafeFreeze newM
+  pure $ Text new dstOff (dstLen + srcLen)
+{-# INLINE appendBounded #-}
+
+appendExact :: Int -> (forall s. MArray s -> Int -> ST s ()) -> Buffer ⊸ Buffer
+appendExact srcLen f = appendBounded srcLen (\dst dstOff -> f dst dstOff >> pure srcLen)
+{-# INLINE appendExact #-}
+
 -- | Append 'Text' suffix to a 'Buffer' by mutating it.
 -- If a suffix is statically known, consider using '(|>#)' for optimal performance.
 --
@@ -222,19 +242,10 @@ dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 --
 (|>) ∷ Buffer ⊸ Text → Buffer
 infixl 6 |>
-Buffer (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Buffer $ runST $ do
-  let dstFullLen = sizeofByteArray dst
-      newLen = dstLen + srcLen
-      newFullLen = dstOff + 2 * newLen
-  newM ← if dstOff + newLen <= dstFullLen
-    then unsafeThaw dst
-    else do
-      tmpM ← A.new newFullLen
-      A.copyI dstLen tmpM dstOff dst dstOff
-      pure tmpM
-  A.copyI srcLen newM (dstOff + dstLen) src srcOff
-  new ← A.unsafeFreeze newM
-  pure $ Text new dstOff newLen
+buffer |> (Text src srcOff srcLen) = appendExact
+  srcLen
+  (\dst dstOff -> A.copyI srcLen dst dstOff src srcOff)
+  buffer
 
 -- | Append 'Char' to a 'Buffer' by mutating it.
 --
@@ -244,19 +255,7 @@ Buffer (Text dst dstOff dstLen) |> (Text src srcOff srcLen) = Buffer $ runST $ d
 --
 (|>.) ∷ Buffer ⊸ Char → Buffer
 infixl 6 |>.
-Buffer (Text dst dstOff dstLen) |>. ch = Buffer $ runST $ do
-  let dstFullLen = sizeofByteArray dst
-      maxSrcLen = 4
-      newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
-  newM ← if dstOff + dstLen + maxSrcLen <= dstFullLen
-    then unsafeThaw dst
-    else do
-      tmpM ← A.new newFullLen
-      A.copyI dstLen tmpM dstOff dst dstOff
-      pure tmpM
-  srcLen ← unsafeWrite newM (dstOff + dstLen) ch
-  new ← A.unsafeFreeze newM
-  pure $ Text new dstOff (dstLen + srcLen)
+buffer |>. ch = appendBounded 4 (\dst dstOff -> unsafeWrite dst dstOff ch) buffer
 
 -- | Prepend 'Text' prefix to a 'Buffer' by mutating it.
 -- If a prefix is statically known, consider using '(<|#)' for optimal performance.
@@ -392,20 +391,12 @@ liftText f (Buffer x) = Buffer (f x)
 -- The literal string must not contain zero bytes @\\0@, this condition is not checked.
 (|>#) ∷ Buffer ⊸ Addr# → Buffer
 infixl 6 |>#
-Buffer (Text dst dstOff dstLen) |># addr# = Buffer $ runST $ do
-  let dstFullLen = sizeofByteArray dst
-      srcLen = I# (cstringLength# addr#)
-      newLen = dstLen + srcLen
-      newFullLen = dstOff + 2 * newLen
-  newM ← if dstOff + newLen <= dstFullLen
-    then unsafeThaw dst
-    else do
-      tmpM ← A.new newFullLen
-      A.copyI dstLen tmpM dstOff dst dstOff
-      pure tmpM
-  A.copyFromPointer newM (dstOff + dstLen) (Ptr addr#) srcLen
-  new ← A.unsafeFreeze newM
-  pure $ Text new dstOff newLen
+buffer |># addr# = appendExact
+  srcLen
+  (\dst dstOff -> A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
+  buffer
+  where
+    srcLen = I# (cstringLength# addr#)
 
 -- | Prepend a null-terminated UTF-8 string
 -- to a 'Buffer' by mutating it. E. g.,
@@ -455,19 +446,11 @@ infixr 6 %<|
 -- | Append hexadecimal number.
 (|>&) :: (Integral a, FiniteBits a) => Buffer ⊸ a -> Buffer
 infixl 6 |>&
-Buffer (Text dst dstOff dstLen) |>& n = Buffer $ runST $ do
-  let dstFullLen = sizeofByteArray dst
-      maxSrcLen = finiteBitSize n
-      newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
-  newM ← if dstOff + dstLen + maxSrcLen <= dstFullLen
-    then unsafeThaw dst
-    else do
-      tmpM ← A.new newFullLen
-      A.copyI dstLen tmpM dstOff dst dstOff
-      pure tmpM
-  srcLen ← unsafeAppendHex newM (dstOff + dstLen) n
-  new ← A.unsafeFreeze newM
-  pure $ Text new dstOff (dstLen + srcLen)
+buffer |>& n = appendBounded
+  (finiteBitSize n)
+  (\dst dstOff -> unsafeAppendHex dst dstOff n)
+  buffer
+-- TODO allocate less than finiteBitSize n
 
 -- | Prepend hexadecimal number.
 (&<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
