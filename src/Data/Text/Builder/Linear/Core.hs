@@ -59,6 +59,7 @@ unBuffer (Buffer x) = x
 --
 -- Be careful to write @runBuffer (\b -> ...)@ instead of @runBuffer $ \b -> ...@,
 -- because current implementation of linear types lacks special support for '($)'.
+-- Alternatively, you can import @Prelude.Linear.($)@ from @linear-base@.
 --
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (f (Buffer mempty))

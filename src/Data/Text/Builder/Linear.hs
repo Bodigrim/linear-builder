@@ -106,6 +106,7 @@ newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 --
 -- Be careful to write @runBuilder (\b -> ...)@ instead of @runBuilder $ \b -> ...@,
 -- because current implementation of linear types lacks special support for '($)'.
+-- Alternatively, you can import @Prelude.Linear.($)@ from @linear-base@.
 --
 runBuilder :: Builder ⊸ Text
 runBuilder (Builder f) = runBuffer f
