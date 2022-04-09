@@ -150,14 +150,31 @@ fromAddr :: Addr# -> Builder
 fromAddr x = Builder $ \b -> b |># x
 {-# INLINE fromAddr #-}
 
+-- | Create 'Builder', containing decimal representation of a given number.
+--
+-- >>> fromChar 'x' <> fromDec (123 :: Int)
+-- "x123"
+--
 fromDec :: (Integral a, FiniteBits a) => a -> Builder
 fromDec x = Builder $ \b -> b |>$ x
 {-# INLINE fromDec #-}
 
+-- | Create 'Builder', containing hexadecimal representation of a given number.
+--
+-- >>> :set -XMagicHash
+-- >>> fromAddr "0x"# <> fromHex (0x123def :: Int)
+-- "0x123def"
+--
 fromHex :: (Integral a, FiniteBits a) => a -> Builder
 fromHex x = Builder $ \b -> b |>& x
 {-# INLINE fromHex #-}
 
+-- | Create 'Builder', containing a given 'Double'.
+--
+-- >>> :set -XMagicHash
+-- >>> fromAddr "pi="# <> fromDouble pi
+-- "pi=3.141592653589793"
+--
 fromDouble :: Double -> Builder
 fromDouble x = Builder $ \b -> b |>% x
 {-# INLINE fromDouble #-}
