@@ -16,6 +16,7 @@ import Data.Int
 import Data.Text ()
 import qualified Data.Text.Array as A
 import Data.Word
+import GHC.Exts
 import GHC.ST
 import Numeric.QuoteQuot
 
@@ -46,17 +47,19 @@ maxDecLen a
 
 exactDecLen :: (Integral a, FiniteBits a) => a -> Int
 exactDecLen n
-  | isSigned n, n == bit (finiteBitSize n - 1)
-  = 1 + go (complement n)
   | isSigned n, n < 0
-  = 1 + go (negate n)
+  = 1 + go (if n == bit (finiteBitSize n - 1) then complement n else negate n)
   | otherwise
   = go n
   where
+    go :: (Integral a, FiniteBits a) => a -> Int
     go k
-      | k < 10 = 1
-      | otherwise = 1 + go (k `quot` 10)
-      -- TODO this is very slow
+      | finiteBitSize k >= 32, k >= 1000000000 = 9 + go (quotBillion k)
+      | otherwise = goInt (fromIntegral k)
+
+    goInt l@(I# l#)
+      | l >= 1000 = 3 + go ($$(quoteQuot (1000 :: Int)) l)
+      | otherwise = I# (l# >=# 100#) + I# (l# >=# 10#) + 1
 
 unsafeAppendDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
 unsafeAppendDec marr off n = unsafePrependDec marr (off + exactDecLen n) n
@@ -90,3 +93,14 @@ quotRem10 a = case (finiteBitSize a, isSigned a) of
   where
     cast :: (Integral a, Integral b) => (b -> (b, b)) -> (a, a)
     cast f = bimap fromIntegral fromIntegral (f (fromIntegral a))
+
+quotBillion :: (Integral a, FiniteBits a) => a -> a
+quotBillion a = case (finiteBitSize a, isSigned a) of
+  (64, True)  -> cast $$(quoteQuot (1000000000 :: Int64))
+  (64, False) -> cast $$(quoteQuot (1000000000 :: Word64))
+  (32, True)  -> cast $$(quoteQuot (1000000000 :: Int32))
+  (32, False) -> cast $$(quoteQuot (1000000000 :: Word32))
+  _ -> a `quot` 1000000000
+  where
+    cast :: (Integral a, Integral b) => (b -> b) -> a
+    cast f = fromIntegral (f (fromIntegral a))
