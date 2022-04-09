@@ -29,6 +29,7 @@ buffer |>$ n = appendBounded
   (maxDecLen n)
   (\dst dstOff -> unsafeAppendDec dst dstOff n)
   buffer
+{-# INLINABLE (|>$) #-}
 
 -- | Prepend decimal number.
 ($<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
@@ -38,12 +39,14 @@ n $<| buffer = prependBounded
   (\dst dstOff -> unsafePrependDec dst dstOff n)
   (\dst dstOff -> unsafeAppendDec dst dstOff n)
   buffer
+{-# INLINABLE ($<|) #-}
 
 -- | ceiling (fbs a * logBase 10 2) < ceiling (fbs a * 5 / 16) < 1 + floor (fbs a * 5 / 16)
 maxDecLen :: FiniteBits a => a -> Int
 maxDecLen a
   | isSigned a = 2 + (finiteBitSize a * 5) `shiftR` 4
   | otherwise  = 1 + (finiteBitSize a * 5) `shiftR` 4
+{-# INLINABLE maxDecLen #-}
 
 exactDecLen :: (Integral a, FiniteBits a) => a -> Int
 exactDecLen n
@@ -60,9 +63,11 @@ exactDecLen n
     goInt l@(I# l#)
       | l >= 1000 = 3 + go ($$(quoteQuot (1000 :: Int)) l)
       | otherwise = I# (l# >=# 100#) + I# (l# >=# 10#) + 1
+{-# INLINABLE exactDecLen #-}
 
 unsafeAppendDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
 unsafeAppendDec marr off n = unsafePrependDec marr (off + exactDecLen n) n
+{-# INLINABLE unsafeAppendDec #-}
 
 unsafePrependDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
 unsafePrependDec marr off n = go (off - 1) (abs n) >>= sign
@@ -78,6 +83,7 @@ unsafePrependDec marr off n = go (off - 1) (abs n) >>= sign
       if q == 0 then pure o else go (o - 1) q
       where
         (q, r) = quotRem10 k
+{-# INLINABLE unsafePrependDec #-}
 
 quotRem10 :: (Integral a, FiniteBits a) => a -> (a, a)
 quotRem10 a = case (finiteBitSize a, isSigned a) of
@@ -93,6 +99,7 @@ quotRem10 a = case (finiteBitSize a, isSigned a) of
   where
     cast :: (Integral a, Integral b) => (b -> (b, b)) -> (a, a)
     cast f = bimap fromIntegral fromIntegral (f (fromIntegral a))
+{-# INLINABLE quotRem10 #-}
 
 quotBillion :: (Integral a, FiniteBits a) => a -> a
 quotBillion a = case (finiteBitSize a, isSigned a) of
@@ -104,3 +111,4 @@ quotBillion a = case (finiteBitSize a, isSigned a) of
   where
     cast :: (Integral a, Integral b) => (b -> b) -> a
     cast f = fromIntegral (f (fromIntegral a))
+{-# INLINABLE quotBillion #-}

@@ -24,6 +24,7 @@ buffer |>& n = appendBounded
   (finiteBitSize n `shiftR` 2)
   (\dst dstOff -> unsafeAppendHex dst dstOff n)
   buffer
+{-# INLINABLE (|>&) #-}
 
 -- | Prepend hexadecimal number.
 (&<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
@@ -33,6 +34,7 @@ n &<| buffer = prependBounded
   (\dst dstOff -> unsafePrependHex dst dstOff n)
   (\dst dstOff -> unsafeAppendHex dst dstOff n)
   buffer
+{-# INLINABLE (&<|) #-}
 
 unsafeAppendHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
 unsafeAppendHex marr off n = do
@@ -41,6 +43,7 @@ unsafeAppendHex marr off n = do
     let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf in
       writeNibbleAsHex marr (off + i) (fromIntegral nibble)
   pure len
+{-# INLINABLE unsafeAppendHex #-}
 
 unsafePrependHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
 unsafePrependHex marr off n = do
@@ -49,9 +52,11 @@ unsafePrependHex marr off n = do
     let nibble = (n `shiftR` (i `shiftL` 2)) .&. 0xf in
       writeNibbleAsHex marr (off - 1 - i) (fromIntegral nibble)
   pure len
+{-# INLINABLE unsafePrependHex #-}
 
 lengthAsHex :: FiniteBits a => a -> Int
 lengthAsHex n = max1 $ (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
+{-# INLINABLE lengthAsHex #-}
 
 -- Branchless equivalent for max 1 n.
 max1 :: Int -> Int
