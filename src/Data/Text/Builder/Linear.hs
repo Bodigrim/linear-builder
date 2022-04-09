@@ -230,8 +230,40 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
 {-# INLINE appendBounded #-}
 
 appendExact :: Int -> (forall s. MArray s -> Int -> ST s ()) -> Buffer ⊸ Buffer
-appendExact srcLen f = appendBounded srcLen (\dst dstOff -> f dst dstOff >> pure srcLen)
+appendExact srcLen appender = appendBounded
+  srcLen
+  (\dst dstOff -> appender dst dstOff >> pure srcLen)
 {-# INLINE appendExact #-}
+
+prependBounded
+  :: Int
+  -> (forall s. MArray s -> Int -> ST s Int)
+  -> (forall s. MArray s -> Int -> ST s Int)
+  -> Buffer
+   ⊸ Buffer
+prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
+  | maxSrcLen <= dstOff = Buffer $ runST $ do
+    newM ← unsafeThaw dst
+    srcLen ← prepender newM dstOff
+    new ← A.unsafeFreeze newM
+    pure $ Text new (dstOff - srcLen) (srcLen + dstLen)
+  | otherwise = Buffer $ runST $ do
+    let dstFullLen = sizeofByteArray dst
+        newOff = dstLen + maxSrcLen
+        newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
+    newM ← A.new newFullLen
+    srcLen ← appender newM newOff
+    A.copyI dstLen newM (newOff + srcLen) dst dstOff
+    new ← A.unsafeFreeze newM
+    pure $ Text new newOff (dstLen + srcLen)
+{-# INLINE prependBounded #-}
+
+prependExact :: Int -> (forall s. MArray s -> Int -> ST s ()) -> Buffer ⊸ Buffer
+prependExact srcLen appender = prependBounded
+  srcLen
+  (\dst dstOff -> appender dst (dstOff - srcLen) >> pure srcLen)
+  (\dst dstOff -> appender dst dstOff >> pure srcLen)
+{-# INLINE prependExact #-}
 
 -- | Append 'Text' suffix to a 'Buffer' by mutating it.
 -- If a suffix is statically known, consider using '(|>#)' for optimal performance.
@@ -266,20 +298,10 @@ buffer |>. ch = appendBounded 4 (\dst dstOff -> unsafeWrite dst dstOff ch) buffe
 --
 (<|) ∷ Text → Buffer ⊸ Buffer
 infixr 6 <|
-Text src srcOff srcLen <| Buffer (Text dst dstOff dstLen) = Buffer $ case () of
-  () | srcLen <= dstOff ->
-    (\new -> Text new (dstOff - srcLen) (srcLen + dstLen)) $ runST $ do
-      newM ← unsafeThaw dst
-      A.copyI srcLen newM (dstOff - srcLen) src srcOff
-      A.unsafeFreeze newM
-  () | otherwise -> let newLen = dstLen + srcLen in
-    (\new -> Text new newLen newLen) $ runST $ do
-      let dstFullLen = sizeofByteArray dst
-          newFullLen = 2 * newLen + (dstFullLen - dstOff - dstLen)
-      newM ← A.new newFullLen
-      A.copyI srcLen newM newLen src srcOff
-      A.copyI dstLen newM (newLen + srcLen) dst dstOff
-      A.unsafeFreeze newM
+Text src srcOff srcLen <| buffer = prependExact
+  srcLen
+  (\dst dstOff -> A.copyI srcLen dst dstOff src srcOff)
+  buffer
 
 -- | Prepend 'Char' to a 'Buffer' by mutating it.
 --
@@ -289,23 +311,11 @@ Text src srcOff srcLen <| Buffer (Text dst dstOff dstLen) = Buffer $ case () of
 --
 (.<|) ∷ Char → Buffer ⊸ Buffer
 infixr 6 .<|
-ch .<| Buffer (Text dst dstOff dstLen)
-  | maxSrcLen <= dstOff = Buffer $ runST $ do
-    newM ← unsafeThaw dst
-    srcLen ← unsafePrependCharM newM dstOff ch
-    new ← A.unsafeFreeze newM
-    pure $ Text new (dstOff - srcLen) (srcLen + dstLen)
-  | otherwise = Buffer $ runST $ do
-    let dstFullLen = sizeofByteArray dst
-        newOff = dstLen + maxSrcLen
-        newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
-    newM ← A.new newFullLen
-    srcLen ← unsafeWrite newM newOff ch
-    A.copyI dstLen newM (newOff + srcLen) dst dstOff
-    new ← A.unsafeFreeze newM
-    pure $ Text new newOff (dstLen + srcLen)
-  where
-    maxSrcLen = 4
+ch .<| buffer = prependBounded
+  4
+  (\dst dstOff -> unsafePrependCharM dst dstOff ch)
+  (\dst dstOff -> unsafeWrite dst dstOff ch)
+  buffer
 
 unsafeThaw ∷ Array → ST s (MArray s)
 unsafeThaw (ByteArray a) = ST $ \s# →
@@ -408,20 +418,12 @@ buffer |># addr# = appendExact
 -- The literal string must not contain zero bytes @\\0@, this condition is not checked.
 (<|#) ∷ Addr# → Buffer ⊸ Buffer
 infixr 6 <|#
-addr# <|# Buffer (Text dst dstOff dstLen) = let srcLen = I# (cstringLength# addr#) in Buffer $ case () of
-  () | srcLen <= dstOff ->
-    (\new -> Text new (dstOff - srcLen) (srcLen + dstLen)) $ runST $ do
-      newM ← unsafeThaw dst
-      A.copyFromPointer newM (dstOff - srcLen) (Ptr addr#) srcLen
-      A.unsafeFreeze newM
-  () | otherwise -> let newLen = dstLen + srcLen in
-    (\new -> Text new newLen newLen) $ runST $ do
-      let dstFullLen = sizeofByteArray dst
-          newFullLen = 2 * newLen + (dstFullLen - dstOff - dstLen)
-      newM ← A.new newFullLen
-      A.copyFromPointer newM newLen (Ptr addr#) srcLen
-      A.copyI dstLen newM (newLen + srcLen) dst dstOff
-      A.unsafeFreeze newM
+addr# <|# buffer = prependExact
+  srcLen
+  (\dst dstOff -> A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
+  buffer
+  where
+    srcLen = I# (cstringLength# addr#)
 
 -- | Append decimal number.
 (|>$) :: FiniteBits a => Buffer ⊸ a -> Buffer
@@ -454,23 +456,11 @@ buffer |>& n = appendBounded
 -- | Prepend hexadecimal number.
 (&<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
 infixr 6 &<|
-n &<| Buffer (Text dst dstOff dstLen)
-  | maxSrcLen <= dstOff = Buffer $ runST $ do
-    newM ← unsafeThaw dst
-    srcLen ← unsafePrependHex newM dstOff n
-    new ← A.unsafeFreeze newM
-    pure $ Text new (dstOff - srcLen) (srcLen + dstLen)
-  | otherwise = Buffer $ runST $ do
-    let dstFullLen = sizeofByteArray dst
-        newOff = dstLen + maxSrcLen
-        newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
-    newM ← A.new newFullLen
-    srcLen ← unsafeAppendHex newM newOff n
-    A.copyI dstLen newM (newOff + srcLen) dst dstOff
-    new ← A.unsafeFreeze newM
-    pure $ Text new newOff (dstLen + srcLen)
-  where
-    maxSrcLen = finiteBitSize n
+n &<| buffer = prependBounded
+  (finiteBitSize n `shiftR` 2)
+  (\dst dstOff -> unsafePrependHex dst dstOff n)
+  (\dst dstOff -> unsafeAppendHex dst dstOff n)
+  buffer
 
 unsafeAppendHex :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
 unsafeAppendHex marr off n = do
