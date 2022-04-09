@@ -43,6 +43,7 @@ library
   ghc-options: -O2 -fexpose-all-unfoldings
   exposed-modules:
     Data.Text.Builder.Linear
+    Data.Text.Builder.Linear.Core
 
 test-suite linear-builder-tests
   import: stanza
