@@ -39,11 +39,16 @@ common stanza
 
 library
   import: stanza
+  build-depends: quote-quot >= 0.2
   hs-source-dirs:   src
   ghc-options: -O2 -fexpose-all-unfoldings
   exposed-modules:
     Data.Text.Builder.Linear
     Data.Text.Builder.Linear.Core
+  other-modules:
+    Data.Text.Builder.Linear.Char
+    Data.Text.Builder.Linear.Dec
+    Data.Text.Builder.Linear.Hex
 
 test-suite linear-builder-tests
   import: stanza

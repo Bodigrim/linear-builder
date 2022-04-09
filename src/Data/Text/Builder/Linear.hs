@@ -86,6 +86,7 @@ import GHC.Exts
 
 import Data.Text.Builder.Linear.Char
 import Data.Text.Builder.Linear.Core
+import Data.Text.Builder.Linear.Dec
 import Data.Text.Builder.Linear.Hex
 
 -- | Thin wrapper over 'Buffer' with a handy 'Semigroup' instance.
@@ -240,16 +241,6 @@ addr# <|# buffer = prependExact
   buffer
   where
     srcLen = I# (cstringLength# addr#)
-
--- | Append decimal number.
-(|>$) :: FiniteBits a => Buffer ⊸ a -> Buffer
-infixl 6 |>$
-(|>$) = undefined
-
--- | Prepend decimal number.
-($<|) :: FiniteBits a => a -> Buffer ⊸ Buffer
-infixr 6 $<|
-($<|) = undefined
 
 -- | Append double.
 (|>%) :: Buffer ⊸ Double -> Buffer

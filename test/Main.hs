@@ -38,6 +38,8 @@ data Action
   | PrependChar Char
   | AppendHex Word
   | PrependHex Word
+  | AppendDec Int
+  | PrependDec Int
   deriving (Eq, Ord, Show, Generic)
 
 instance Arbitrary Action where
@@ -48,6 +50,8 @@ instance Arbitrary Action where
     , PrependChar <$> arbitraryUnicodeChar
     , AppendHex   <$> arbitraryBoundedIntegral
     , PrependHex  <$> arbitraryBoundedIntegral
+    , AppendDec   <$> arbitraryBoundedIntegral
+    , PrependDec  <$> arbitraryBoundedIntegral
     ]
   shrink = genericShrink
 
@@ -61,6 +65,8 @@ interpretOnText = foldl' go mempty
     go b (PrependChar x) = T.cons x b
     go b (AppendHex   x) = b <> toStrict (toLazyText (TLBI.hexadecimal x))
     go b (PrependHex  x) = toStrict (toLazyText (TLBI.hexadecimal x)) <> b
+    go b (AppendDec   x) = b <> toStrict (toLazyText (TLBI.decimal x))
+    go b (PrependDec  x) = toStrict (toLazyText (TLBI.decimal x)) <> b
 
 interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
 interpretOnBuffer xs z = linearFoldl' go z xs
@@ -72,6 +78,8 @@ interpretOnBuffer xs z = linearFoldl' go z xs
     go b (PrependChar x) = x .<| b
     go b (AppendHex   x) = b |>& x
     go b (PrependHex  x) = x &<| b
+    go b (AppendDec   x) = b |>$ x
+    go b (PrependDec  x) = x $<| b
 
 linearFoldl' ∷ (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
 linearFoldl' f = go
