@@ -12,7 +12,7 @@ description:
   Strict Text builder, which hides mutated buffer behind linear types
   and takes amortized linear time.
 extra-source-files: changelog.md README.md
-tested-with: GHC == 9.0.2, GHC == 9.2.1
+tested-with: GHC == 9.0.2, GHC == 9.2.2
 
 source-repository head
   type: git
