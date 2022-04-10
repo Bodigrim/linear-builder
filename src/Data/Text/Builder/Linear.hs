@@ -119,6 +119,10 @@ instance Monoid Builder where
   mempty = Builder (\b -> b)
   {-# INLINE mempty #-}
 
+instance IsString Builder where
+  fromString = fromText . fromString
+  {-# INLINE fromString #-}
+
 -- | Create 'Builder', containing a given 'Text'.
 --
 -- >>> :set -XOverloadedStrings
