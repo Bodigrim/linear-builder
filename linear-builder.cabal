@@ -48,6 +48,7 @@ library
   other-modules:
     Data.Text.Builder.Linear.Char
     Data.Text.Builder.Linear.Dec
+    Data.Text.Builder.Linear.Double
     Data.Text.Builder.Linear.Hex
 
 test-suite linear-builder-tests

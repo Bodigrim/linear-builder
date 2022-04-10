@@ -13,7 +13,6 @@ module Data.Text.Builder.Linear.Dec
 import Data.Bifunctor
 import Data.Bits
 import Data.Int
-import Data.Text ()
 import qualified Data.Text.Array as A
 import Data.Word
 import GHC.Exts

@@ -20,7 +20,6 @@ module Data.Text.Builder.Linear.Core
   , liftText
   ) where
 
-import Data.Text ()
 import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
 import qualified Data.Text.Array as A

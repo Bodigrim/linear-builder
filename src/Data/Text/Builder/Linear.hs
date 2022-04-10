@@ -48,6 +48,8 @@
 
 {-# LANGUAGE RankNTypes #-}
 
+{-# OPTIONS_GHC -ddump-simpl -dsuppress-all -dno-suppress-type-signatures -ddump-to-file #-}
+
 module Data.Text.Builder.Linear
   ( -- * Buffer
     Buffer
@@ -79,20 +81,14 @@ module Data.Text.Builder.Linear
   ) where
 
 import Data.Bits
-import qualified Data.ByteString as B
-import qualified Data.ByteString.Builder as B
-import qualified Data.ByteString.Internal as B
-import Data.Text ()
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
 import GHC.Exts
-import GHC.ForeignPtr (unsafeWithForeignPtr)
-import GHC.IO (unsafeIOToST, unsafeSTToIO)
-import GHC.ST
 
 import Data.Text.Builder.Linear.Char
 import Data.Text.Builder.Linear.Core
 import Data.Text.Builder.Linear.Dec
+import Data.Text.Builder.Linear.Double
 import Data.Text.Builder.Linear.Hex
 
 -- | Thin wrapper over 'Buffer' with a handy 'Semigroup' instance.
@@ -247,34 +243,3 @@ addr# <|# buffer = prependExact
   buffer
   where
     srcLen = I# (cstringLength# addr#)
-
--- | Append double.
-(|>%) :: Buffer ⊸ Double -> Buffer
-infixl 6 |>%
-buffer |>% x = appendBounded
-  22 -- length "-3.141592653589793e300"
-  (\dst dstOff -> unsafeAppendDouble dst dstOff x)
-  buffer
-
--- | Prepend double
-(%<|) :: Double -> Buffer ⊸ Buffer
-infixr 6 %<|
-x %<| buffer = prependBounded
-  22 -- length "-3.141592653589793e300"
-  (\dst dstOff -> unsafePrependDouble dst dstOff x)
-  (\dst dstOff -> unsafeAppendDouble dst dstOff x)
-  buffer
-
-unsafeAppendDouble :: A.MArray s -> Int -> Double -> ST s Int
-unsafeAppendDouble dst dstOff x = do
-  let (fp, srcLen) = B.toForeignPtr0 (B.toStrict (B.toLazyByteString (B.doubleDec x)))
-  unsafeIOToST $ unsafeWithForeignPtr fp $ \(Ptr addr#) ->
-    unsafeSTToIO $ A.copyFromPointer dst dstOff (Ptr addr#) srcLen
-  pure srcLen
-
-unsafePrependDouble :: A.MArray s -> Int -> Double -> ST s Int
-unsafePrependDouble dst dstOff x = do
-  let (fp, srcLen) = B.toForeignPtr0 (B.toStrict (B.toLazyByteString (B.doubleDec x)))
-  unsafeIOToST $ unsafeWithForeignPtr fp $ \(Ptr addr#) ->
-    unsafeSTToIO $ A.copyFromPointer dst (dstOff - srcLen) (Ptr addr#) srcLen
-  pure srcLen

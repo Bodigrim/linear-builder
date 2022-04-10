@@ -10,7 +10,6 @@ module Data.Text.Builder.Linear.Hex
 
 import Data.Bits
 import Data.Foldable (forM_)
-import Data.Text ()
 import qualified Data.Text.Array as A
 import GHC.Exts
 import GHC.ST

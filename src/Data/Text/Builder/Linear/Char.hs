@@ -9,7 +9,6 @@ module Data.Text.Builder.Linear.Char
   , (.<|)
   ) where
 
-import Data.Text ()
 import qualified Data.Text.Array as A
 import Data.Text.Internal.Encoding.Utf8 (utf8Length, ord2, ord3, ord4)
 import Data.Text.Internal.Unsafe.Char (unsafeWrite, ord)
