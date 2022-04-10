@@ -28,6 +28,7 @@ common stanza
     DeriveGeneric
     GADTs
     KindSignatures
+    LambdaCase
     LinearTypes
     MagicHash
     NumDecimals

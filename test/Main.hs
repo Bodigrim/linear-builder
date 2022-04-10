@@ -53,6 +53,10 @@ instance Arbitrary Action where
     , PrependHex    <$> arbitraryBoundedIntegral
     , AppendDec     <$> arbitraryBoundedIntegral
     , PrependDec    <$> arbitraryBoundedIntegral
+    , pure $ AppendHex minBound
+    , pure $ AppendHex maxBound
+    -- TODO , pure $ AppendDec minBound
+    , pure $ AppendDec maxBound
     , AppendDouble  <$> arbitrary
     , PrependDouble <$> arbitrary
     ]

@@ -49,19 +49,20 @@ maxDecLen a
 
 exactDecLen :: (Integral a, FiniteBits a) => a -> Int
 exactDecLen n
-  | isSigned n, n < 0
-  = 1 + go (if n == bit (finiteBitSize n - 1) then complement n else negate n)
+  | n < 0
+  = go 2 (complement n + fromIntegral (I# (dataToTag# (n > bit (finiteBitSize n - 1)))))
   | otherwise
-  = go n
+  = go 1 n
   where
-    go :: (Integral a, FiniteBits a) => a -> Int
-    go k
-      | finiteBitSize k >= 32, k >= 1000000000 = 9 + go (quotBillion k)
-      | otherwise = goInt (fromIntegral k)
+    go :: (Integral a, FiniteBits a) => Int -> a -> Int
+    go acc k
+      | finiteBitSize k >= 32, k >= 1000000000 = go (acc + 9) (quotBillion k)
+      | otherwise = acc + goInt (fromIntegral k)
 
     goInt l@(I# l#)
-      | l >= 1000 = 3 + go ($$(quoteQuot (1000 :: Int)) l)
-      | otherwise = I# (l# >=# 100#) + I# (l# >=# 10#) + 1
+      | l >= 1000000 = 6 + I# (l# >=# 100000000#) + I# (l# >=# 10000000#)
+      | l >= 1000    = 3 + I# (l# >=# 100000#)    + I# (l# >=# 10000#)
+      | otherwise    =     I# (l# >=# 100#)       + I# (l# >=# 10#)
 {-# INLINABLE exactDecLen #-}
 
 unsafeAppendDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int

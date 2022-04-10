@@ -62,6 +62,7 @@ runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (f (Buffer mempty))
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
+-- Similar to @Data.Unrestricted.Linear.Dupable@ from @linear-base@.
 --
 -- It is a bit tricky to use because of
 -- <https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/linear_types.html#limitations current limitations>
