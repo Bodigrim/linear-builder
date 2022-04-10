@@ -51,6 +51,8 @@ module Data.Text.Builder.Linear
     Buffer
   , runBuffer
   , dupBuffer
+  , consumeBuffer
+  , eraseBuffer
   , (|>)
   , (|>.)
   , (|>#)

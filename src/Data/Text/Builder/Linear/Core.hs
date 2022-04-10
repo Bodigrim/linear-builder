@@ -10,6 +10,8 @@ module Data.Text.Builder.Linear.Core
     Buffer
   , runBuffer
   , dupBuffer
+  , consumeBuffer
+  , eraseBuffer
   , appendBounded
   , appendExact
   , prependBounded
@@ -76,6 +78,12 @@ runBuffer f = unBuffer (f (Buffer mempty))
 --
 dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
+
+consumeBuffer :: Buffer ⊸ ()
+consumeBuffer Buffer{} = ()
+
+eraseBuffer :: Buffer ⊸ Buffer
+eraseBuffer Buffer{} = Buffer mempty
 
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
 appendBounded
