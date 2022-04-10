@@ -5,14 +5,14 @@
 
 module Main where
 
-import Data.Text.Builder.Linear
 import Data.Foldable
 import qualified Data.Text as T
-import qualified Data.Text.Lazy.Builder.Int as TLBI
-import qualified Data.Text.Lazy.Builder.RealFloat as TLBR
+import Data.Text.Builder.Linear.Buffer
 import Data.Text.Internal (Text(..))
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder (toLazyText)
+import Data.Text.Lazy.Builder.Int (decimal, hexadecimal)
+import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import GHC.Generics
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding ((><))
@@ -66,12 +66,12 @@ interpretOnText xs z = foldl' go z xs
     go b (PrependText   x) = x <> b
     go b (AppendChar    x) = T.snoc b x
     go b (PrependChar   x) = T.cons x b
-    go b (AppendHex     x) = b <> toStrict (toLazyText (TLBI.hexadecimal x))
-    go b (PrependHex    x) = toStrict (toLazyText (TLBI.hexadecimal x)) <> b
-    go b (AppendDec     x) = b <> toStrict (toLazyText (TLBI.decimal x))
-    go b (PrependDec    x) = toStrict (toLazyText (TLBI.decimal x)) <> b
-    go b (AppendDouble  x) = b <> toStrict (toLazyText (TLBR.realFloat x))
-    go b (PrependDouble x) = toStrict (toLazyText (TLBR.realFloat x)) <> b
+    go b (AppendHex     x) = b <> toStrict (toLazyText (hexadecimal x))
+    go b (PrependHex    x) = toStrict (toLazyText (hexadecimal x)) <> b
+    go b (AppendDec     x) = b <> toStrict (toLazyText (decimal x))
+    go b (PrependDec    x) = toStrict (toLazyText (decimal x)) <> b
+    go b (AppendDouble  x) = b <> toStrict (toLazyText (realFloat x))
+    go b (PrependDouble x) = toStrict (toLazyText (realFloat x)) <> b
 
 interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
 interpretOnBuffer xs z = linearFoldl' go z xs

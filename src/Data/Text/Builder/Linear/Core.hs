@@ -6,8 +6,7 @@
 -- Low-level routines for 'Buffer' manipulations.
 
 module Data.Text.Builder.Linear.Core
-  ( -- * Buffer
-    Buffer
+  ( Buffer
   , runBuffer
   , dupBuffer
   , consumeBuffer
@@ -79,9 +78,12 @@ runBuffer f = unBuffer (f (Buffer mempty))
 dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 
+-- | Consume buffer linearly,
+-- similar to @Data.Unrestricted.Linear.Consumable@ from @linear-base@.
 consumeBuffer :: Buffer ⊸ ()
 consumeBuffer Buffer{} = ()
 
+-- | Erase buffer's content, replacing it with an empty 'Text'.
 eraseBuffer :: Buffer ⊸ Buffer
 eraseBuffer Buffer{} = Buffer mempty
 

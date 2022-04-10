@@ -5,16 +5,15 @@
 
 module Main where
 
-import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Builder.Linear
-import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Builder as TLB
-import qualified Data.Text.Lazy.Builder.Int as TLBI
-import qualified Data.Text.Lazy.Builder.RealFloat as TLBR
+import Data.Text.Builder.Linear.Buffer
+import Data.Text.Lazy (toStrict)
+import Data.Text.Lazy.Builder (toLazyText, fromText)
+import Data.Text.Lazy.Builder.Int (decimal, hexadecimal)
+import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import Test.Tasty.Bench
 
-txt ∷ Text
+txt ∷ T.Text
 txt = T.pack "Haskell + Linear Types = ♡"
 
 chr :: Char
@@ -26,14 +25,14 @@ int = 123456789123456789
 dbl :: Double
 dbl = - pi * 1e300
 
-benchBuilder ∷ Int → Text
-benchBuilder = TL.toStrict . TLB.toLazyText . go txtB
+benchBuilder ∷ Int → T.Text
+benchBuilder = toStrict . toLazyText . go txtB
   where
-    txtB = TLB.fromText txt
+    txtB = fromText txt
     go !acc 0 = acc
     go !acc n = go (txtB <> (acc <> txtB)) (n - 1)
 
-benchLinearBuilder ∷ Int → Text
+benchLinearBuilder ∷ Int → T.Text
 benchLinearBuilder m = runBuffer (\b → go (b |> txt) m)
   where
     go ∷ Buffer ⊸ Int → Buffer
