@@ -64,7 +64,6 @@ module Data.Text.Builder.Linear
   , (%<|)
   , (|>&)
   , (&<|)
-  , liftText
     -- * Builder
   , Builder(..)
   , runBuilder

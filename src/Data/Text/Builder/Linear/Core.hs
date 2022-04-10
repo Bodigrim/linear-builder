@@ -15,7 +15,6 @@ module Data.Text.Builder.Linear.Core
   , prependBounded
   , prependExact
   , (><)
-  , liftText
   ) where
 
 import qualified Data.Text as T
@@ -197,9 +196,3 @@ Buffer (Text left leftOff leftLen) >< Buffer (Text right rightOff rightLen) = Bu
     A.copyI rightLen newM (leftOff + leftLen) right rightOff
     new ← A.unsafeFreeze newM
     pure $ Text new leftOff (leftLen + rightLen)
-
--- | Lift a linear function on 'Text' to 'Buffer's.
--- This is not very useful at the moment, because @text@ does not provide
--- any linear functions at all.
-liftText ∷ (Text ⊸ Text) → (Buffer ⊸ Buffer)
-liftText f (Buffer x) = Buffer (f x)

@@ -16,7 +16,6 @@ import Data.Text.Lazy.Builder (toLazyText)
 import GHC.Generics
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding ((><))
-import Unsafe.Coerce
 
 instance Arbitrary Text where
   arbitrary = do
@@ -101,7 +100,6 @@ main = defaultMain $ testGroup "All"
   , testProperty "two sequences of actions" prop2
   , testProperty "append addr#" prop3
   , testProperty "prepend addr#" prop4
-  , testProperty "liftText" prop5
   ]
 
 prop1 ∷ [Action] → Property
@@ -130,10 +128,3 @@ prop4 acts = runBuffer f1 === runBuffer f2
     f1, f2 :: Buffer ⊸ Buffer
     f1 = \b -> addr# <|# interpretOnBuffer acts b
     f2 = \b -> T.pack "foo" <| interpretOnBuffer acts b
-
-prop5 :: [Action] -> Property
-prop5 acts = runBuffer f1 === runBuffer f2
-  where
-    f1, f2 :: Buffer ⊸ Buffer
-    f1 = \b -> interpretOnBuffer acts b
-    f2 = \b -> liftText (unsafeCoerce $ interpretOnText acts) b
