@@ -71,3 +71,4 @@ benchmark linear-builder-bench
     linear-builder,
     tasty-bench >= 0.3
   default-language: Haskell2010
+  ghc-options: -Wno-unused-imports

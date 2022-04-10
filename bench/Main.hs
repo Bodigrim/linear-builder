@@ -10,10 +10,21 @@ import qualified Data.Text as T
 import Data.Text.Builder.Linear
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
+import qualified Data.Text.Lazy.Builder.Int as TLBI
+import qualified Data.Text.Lazy.Builder.RealFloat as TLBR
 import Test.Tasty.Bench
 
 txt ∷ Text
 txt = T.pack "Haskell + Linear Types = ♡"
+
+chr :: Char
+chr = '♡'
+
+int :: Int
+int = 123456789123456789
+
+dbl :: Double
+dbl = - pi * 1e300
 
 benchBuilder ∷ Int → Text
 benchBuilder = TL.toStrict . TLB.toLazyText . go txtB
