@@ -18,6 +18,7 @@ import Data.Text.Lazy.Builder (toLazyText)
 import GHC.Generics
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding ((><))
+import Unsafe.Coerce
 
 instance Arbitrary Text where
   arbitrary = do
@@ -60,8 +61,8 @@ instance Arbitrary Action where
     ]
   shrink = genericShrink
 
-interpretOnText ∷ [Action] → Text
-interpretOnText = foldl' go mempty
+interpretOnText ∷ [Action] → Text → Text
+interpretOnText xs z = foldl' go z xs
   where
     go ∷ Text → Action → Text
     go b (AppendText    x) = b <> x
@@ -102,14 +103,15 @@ main = defaultMain $ testGroup "All"
   , testProperty "two sequences of actions" prop2
   , testProperty "append addr#" prop3
   , testProperty "prepend addr#" prop4
+  , testProperty "liftText" prop5
   ]
 
 prop1 ∷ [Action] → Property
-prop1 acts = interpretOnText acts ===
+prop1 acts = interpretOnText acts mempty ===
   runBuffer (\b → interpretOnBuffer acts b)
 
 prop2 ∷ [Action] → [Action] → Property
-prop2 acts1 acts2 = interpretOnText acts1 <> interpretOnText acts2 ===
+prop2 acts1 acts2 = interpretOnText acts1 mempty <> interpretOnText acts2 mempty ===
   runBuffer (\b → go (dupBuffer b))
   where
     go ∷ (# Buffer, Buffer #) ⊸ Buffer
@@ -130,3 +132,10 @@ prop4 acts = runBuffer f1 === runBuffer f2
     f1, f2 :: Buffer ⊸ Buffer
     f1 = \b -> addr# <|# interpretOnBuffer acts b
     f2 = \b -> T.pack "foo" <| interpretOnBuffer acts b
+
+prop5 :: [Action] -> Property
+prop5 acts = runBuffer f1 === runBuffer f2
+  where
+    f1, f2 :: Buffer ⊸ Buffer
+    f1 = \b -> interpretOnBuffer acts b
+    f2 = \b -> liftText (unsafeCoerce $ interpretOnText acts) b
