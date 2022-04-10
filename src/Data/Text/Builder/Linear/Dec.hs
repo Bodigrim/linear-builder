@@ -73,7 +73,7 @@ unsafePrependDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s
 unsafePrependDec marr off n
   | n < 0, n == bit (finiteBitSize n - 1) = do
     A.unsafeWrite marr (off - 1) (fromIntegral (48 + minBoundLastDigit n))
-    go (off - 2) (abs (fst (quotRem10 n))) >>= sign
+    go (off - 2) (abs (quot10 n)) >>= sign
   | otherwise = go (off - 1) (abs n) >>= sign
   where
     sign o
@@ -86,7 +86,8 @@ unsafePrependDec marr off n
       A.unsafeWrite marr o (fromIntegral (48 + r))
       if q == 0 then pure o else go (o - 1) q
       where
-        (q, r) = quotRem10 k
+        q = quot10 k
+        r = k - 10 * q
 {-# INLINABLE unsafePrependDec #-}
 
 minBoundLastDigit :: FiniteBits a => a -> Int
@@ -97,21 +98,21 @@ minBoundLastDigit a = case finiteBitSize a .&. 4 of
   _ -> 4
 {-# INLINABLE minBoundLastDigit #-}
 
-quotRem10 :: (Integral a, FiniteBits a) => a -> (a, a)
-quotRem10 a = case (finiteBitSize a, isSigned a) of
-  (64, True)  -> cast $$(quoteQuotRem (10 :: Int64))
-  (64, False) -> cast $$(quoteQuotRem (10 :: Word64))
-  (32, True)  -> cast $$(quoteQuotRem (10 :: Int32))
-  (32, False) -> cast $$(quoteQuotRem (10 :: Word32))
-  (16, True)  -> cast $$(quoteQuotRem (10 :: Int16))
-  (16, False) -> cast $$(quoteQuotRem (10 :: Word16))
-  ( 8, True)  -> cast $$(quoteQuotRem (10 :: Int8))
-  ( 8, False) -> cast $$(quoteQuotRem (10 :: Word8))
-  _ -> a `quotRem` 10
+quot10 :: (Integral a, FiniteBits a) => a -> a
+quot10 a = case (finiteBitSize a, isSigned a) of
+  (64, True)  -> cast $$(quoteQuot (10 :: Int64))
+  (64, False) -> cast $$(quoteQuot (10 :: Word64))
+  (32, True)  -> cast $$(quoteQuot (10 :: Int32))
+  (32, False) -> cast $$(quoteQuot (10 :: Word32))
+  (16, True)  -> cast $$(quoteQuot (10 :: Int16))
+  (16, False) -> cast $$(quoteQuot (10 :: Word16))
+  ( 8, True)  -> cast $$(quoteQuot (10 :: Int8))
+  ( 8, False) -> cast $$(quoteQuot (10 :: Word8))
+  _ -> a `quot` 10
   where
-    cast :: (Integral a, Integral b) => (b -> (b, b)) -> (a, a)
-    cast f = bimap fromIntegral fromIntegral (f (fromIntegral a))
-{-# INLINABLE quotRem10 #-}
+    cast :: (Integral a, Integral b) => (b -> b) -> a
+    cast f = fromIntegral (f (fromIntegral a))
+{-# INLINABLE quot10 #-}
 
 quotBillion :: (Integral a, FiniteBits a) => a -> a
 quotBillion a = case (finiteBitSize a, isSigned a) of
