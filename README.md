@@ -43,3 +43,23 @@ and scales better:
   Data.Text.Builder.Linear:
     30.8 ms ± 3.1 ms, 0.10x
 ```
+
+And here are benchmarks for `blaze-markup` after migration to `Data.Text.Builder.Linear`:
+
+```
+All
+  bigTable
+      992  μs ±  80 μs, 49% faster than baseline
+  basic
+      4.35 μs ± 376 ns, 47% faster than baseline
+  wideTree
+      1.26 ms ±  85 μs, 53% faster than baseline
+  wideTreeEscaping
+      217  μs ± 7.8 μs, 58% faster than baseline
+  deepTree
+      242  μs ±  23 μs, 48% faster than baseline
+  manyAttributes
+      811  μs ±  79 μs, 58% faster than baseline
+  customAttribute
+      1.68 ms ± 135 μs, 56% faster than baseline
+```
