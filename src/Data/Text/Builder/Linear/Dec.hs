@@ -70,7 +70,11 @@ unsafeAppendDec marr off n = unsafePrependDec marr (off + exactDecLen n) n
 {-# INLINABLE unsafeAppendDec #-}
 
 unsafePrependDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
-unsafePrependDec marr off n = go (off - 1) (abs n) >>= sign
+unsafePrependDec marr off n
+  | n < 0, n == bit (finiteBitSize n - 1) = do
+    A.unsafeWrite marr (off - 1) (fromIntegral (48 + minBoundLastDigit n))
+    go (off - 2) (abs (fst (quotRem10 n))) >>= sign
+  | otherwise = go (off - 1) (abs n) >>= sign
   where
     sign o
       | n >= 0 = pure (off - o)
@@ -84,6 +88,14 @@ unsafePrependDec marr off n = go (off - 1) (abs n) >>= sign
       where
         (q, r) = quotRem10 k
 {-# INLINABLE unsafePrependDec #-}
+
+minBoundLastDigit :: FiniteBits a => a -> Int
+minBoundLastDigit a = case finiteBitSize a .&. 4 of
+  0 -> 8
+  1 -> 6
+  2 -> 2
+  _ -> 4
+{-# INLINABLE minBoundLastDigit #-}
 
 quotRem10 :: (Integral a, FiniteBits a) => a -> (a, a)
 quotRem10 a = case (finiteBitSize a, isSigned a) of
