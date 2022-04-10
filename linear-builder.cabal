@@ -25,11 +25,13 @@ common stanza
   default-extensions:
     BangPatterns
     CPP
+    DeriveGeneric
     GADTs
     KindSignatures
     LinearTypes
     MagicHash
     NumDecimals
+    RankNTypes
     ScopedTypeVariables
     UnboxedTuples
     UnicodeSyntax

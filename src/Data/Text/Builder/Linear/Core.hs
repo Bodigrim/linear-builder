@@ -5,8 +5,6 @@
 --
 -- Low-level routines for 'Buffer' manipulations.
 
-{-# LANGUAGE RankNTypes #-}
-
 module Data.Text.Builder.Linear.Core
   ( -- * Buffer
     Buffer

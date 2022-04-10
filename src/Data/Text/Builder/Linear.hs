@@ -46,10 +46,6 @@
 --     30.8 ms ± 3.1 ms, 0.10x
 -- @
 
-{-# LANGUAGE RankNTypes #-}
-
-{-# OPTIONS_GHC -ddump-simpl -dsuppress-all -dno-suppress-type-signatures -ddump-to-file #-}
-
 module Data.Text.Builder.Linear
   ( -- * Buffer
     Buffer

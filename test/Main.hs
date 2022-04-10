@@ -3,8 +3,6 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 
-{-# LANGUAGE DeriveGeneric #-}
-
 module Main where
 
 import Data.Text.Builder.Linear
