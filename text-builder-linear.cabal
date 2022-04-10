@@ -1,5 +1,5 @@
 cabal-version:      2.4
-name:               linear-builder
+name:               text-builder-linear
 version:            0.1
 license: BSD-3-Clause
 license-file: LICENSE
@@ -59,7 +59,7 @@ test-suite linear-builder-tests
   type: exitcode-stdio-1.0
   main-is: Main.hs
   build-depends:
-    linear-builder,
+    text-builder-linear,
     tasty,
     tasty-quickcheck
   hs-source-dirs: test
@@ -72,7 +72,7 @@ benchmark linear-builder-bench
   hs-source-dirs: bench
   ghc-options: -rtsopts
   build-depends:
-    linear-builder,
+    text-builder-linear,
     tasty-bench >= 0.3
   default-language: Haskell2010
-  ghc-options: -Wno-unused-imports
+  ghc-options: -O2 -Wno-unused-imports
