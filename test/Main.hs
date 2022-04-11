@@ -57,6 +57,7 @@ instance Arbitrary Action where
     , pure $ AppendHex maxBound
     , pure $ AppendDec minBound
     , pure $ AppendDec maxBound
+    , pure $ AppendDec 0
     , AppendDouble  <$> arbitrary
     , PrependDouble <$> arbitrary
     ]

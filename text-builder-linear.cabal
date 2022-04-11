@@ -42,7 +42,7 @@ common stanza
 
 library
   import: stanza
-  build-depends: bytestring >= 0.10.12, quote-quot >= 0.2
+  build-depends: bytestring >= 0.10.12, quote-quot >= 0.2.1
   hs-source-dirs:   src
   ghc-options: -O2 -fexpose-all-unfoldings
   exposed-modules:
