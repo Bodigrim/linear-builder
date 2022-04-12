@@ -67,4 +67,4 @@ buildStepToFirstChunk = \step -> BBI.newBuffer maxDblLen >>= fill step
       return res
 
 maxDblLen :: Int
-maxDblLen = 23 -- length (show (- pi * 1746e300 :: Double))
+maxDblLen = 24 -- length (show (-1.0000000000000004e-308 :: Double))
