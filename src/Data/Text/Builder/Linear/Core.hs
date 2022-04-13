@@ -63,6 +63,8 @@ unBuffer (Buffer x) = x
 --
 -- Be careful to write @runBuffer (\b -> ...)@ instead of @runBuffer $ \b -> ...@,
 -- because current implementation of linear types lacks special support for '($)'.
+-- Another option is to enable @{-# LANGUAGE BlockArguments #-}@
+-- and write @runBuffer \b -> ...@.
 -- Alternatively, you can import @Prelude.Linear.($)@ from @linear-base@.
 --
 -- 'runBuffer' is similar in spirit to mutable arrays API in @Data.Array.Mutable.Linear@,
