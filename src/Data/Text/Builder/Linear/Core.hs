@@ -32,12 +32,19 @@ import GHC.ST
 -- clients always work with linear functions 'Buffer' ⊸ 'Buffer' instead
 -- and run them on an empty 'Buffer' to extract results.
 --
+-- In terms of @linear-base@ 'Buffer' is @Consumable@ (see 'consumeBuffer')
+-- and @Dupable@ (see 'dupBuffer'), but not @Movable@.
+--
 -- >>> :set -XOverloadedStrings -XLinearTypes
 -- >>> runBuffer (\b -> '!' .<| "foo" <| (b |> "bar" |>. '.'))
 -- "!foobar."
 --
--- Remember: this is a strict builder, so on contrary to 'Data.Text.Lazy.Builder.Buffer'
+-- Remember: this is a strict builder, so on contrary to "Data.Text.Lazy.Builder"
 -- for optimal performance you should use strict left folds instead of lazy right ones.
+--
+-- Starting from GHC 9.2, 'Buffer' is an unlifted datatype,
+-- so you can put it into an unboxed tuple @(# ..., ... #)@,
+-- but not into @(..., ...)@.
 --
 #if MIN_VERSION_base(4,16,0)
 data Buffer :: TYPE ('BoxedRep 'Unlifted) where
@@ -58,6 +65,11 @@ unBuffer (Buffer x) = x
 -- because current implementation of linear types lacks special support for '($)'.
 -- Alternatively, you can import @Prelude.Linear.($)@ from @linear-base@.
 --
+-- 'runBuffer' is similar in spirit to mutable arrays API in @Data.Array.Mutable.Linear@,
+-- which provides functions like @fromList@ ∷ [@a@] -> (@Vector@ @a@ ⊸ @Ur@ b) ⊸ @Ur@ @b@.
+-- Here the initial buffer is always empty and @b@ is 'Text'. Since 'Text' is @Movable@,
+-- 'Text' and @Ur@ 'Text' are equivalent.
+--
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (f (Buffer mempty))
 
@@ -75,6 +87,9 @@ runBuffer f = unBuffer (f (Buffer mempty))
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
 -- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
+--
+-- Note the unboxed tuple: starting from GHC 9.2, 'Buffer' is an unlifted datatype,
+-- so it cannot be put into @(..., ...)@.
 --
 dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)

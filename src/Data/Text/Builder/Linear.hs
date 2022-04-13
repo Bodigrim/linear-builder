@@ -69,6 +69,9 @@ import Data.Text.Builder.Linear.Buffer
 -- >>> fromText "foo" <> fromChar '_' <> fromAddr "bar"#
 -- "foo_bar"
 --
+-- Remember: this is a strict builder, so on contrary to "Data.Text.Lazy.Builder"
+-- for optimal performance you should use strict left folds instead of lazy right ones.
+--
 newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 
 -- | Run 'Builder' computation on an empty 'Buffer', returning 'Text'.
