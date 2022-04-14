@@ -47,11 +47,11 @@ import GHC.ST
 -- but not into @(..., ...)@.
 --
 #if MIN_VERSION_base(4,16,0)
-data Buffer :: TYPE ('BoxedRep 'Unlifted) where
+data Buffer ∷ TYPE ('BoxedRep 'Unlifted) where
 #else
 data Buffer where
 #endif
-  Buffer :: {-# UNPACK #-} !Text -> Buffer
+  Buffer ∷ {-# UNPACK #-} !Text → Buffer
 
 -- | Unwrap 'Buffer', no-op.
 -- Most likely, this is not the function you're looking for
@@ -68,7 +68,7 @@ unBuffer (Buffer x) = x
 -- Alternatively, you can import @Prelude.Linear.($)@ from @linear-base@.
 --
 -- 'runBuffer' is similar in spirit to mutable arrays API in @Data.Array.Mutable.Linear@,
--- which provides functions like @fromList@ ∷ [@a@] -> (@Vector@ @a@ ⊸ @Ur@ b) ⊸ @Ur@ @b@.
+-- which provides functions like @fromList@ ∷ [@a@] → (@Vector@ @a@ ⊸ @Ur@ b) ⊸ @Ur@ @b@.
 -- Here the initial buffer is always empty and @b@ is 'Text'. Since 'Text' is @Movable@,
 -- 'Text' and @Ur@ 'Text' are equivalent.
 --
@@ -87,7 +87,7 @@ runBuffer f = unBuffer (f (Buffer mempty))
 -- Instead write:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
--- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> runBuffer (\b -> (\(# b1, b2 #) → ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
 -- Note the unboxed tuple: starting from GHC 9.2, 'Buffer' is an unlifted datatype,
@@ -98,21 +98,21 @@ dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 
 -- | Consume buffer linearly,
 -- similar to @Data.Unrestricted.Linear.Consumable@ from @linear-base@.
-consumeBuffer :: Buffer ⊸ ()
+consumeBuffer ∷ Buffer ⊸ ()
 consumeBuffer Buffer{} = ()
 
 -- | Erase buffer's content, replacing it with an empty 'Text'.
-eraseBuffer :: Buffer ⊸ Buffer
+eraseBuffer ∷ Buffer ⊸ Buffer
 eraseBuffer Buffer{} = Buffer mempty
 
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
 appendBounded
-  :: Int
+  ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
-  -> (forall s. MArray s -> Int -> ST s Int)
+  → (forall s. MArray s → Int → ST s Int)
   -- ^ Action, which writes bytes starting from the given offset
   -- and returns an actual number of bytes written.
-  -> Buffer
+  → Buffer
   ⊸ Buffer
 appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ runST $ do
   let dstFullLen = sizeofByteArray dst
@@ -130,29 +130,29 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
 
 -- | Low-level routine to append data of known size to a 'Buffer'.
 appendExact
-  :: Int
+  ∷ Int
   -- ^ Exact number of bytes, written by an action
-  -> (forall s. MArray s -> Int -> ST s ())
+  → (forall s. MArray s → Int → ST s ())
   -- ^ Action, which writes bytes starting from the given offset
-  -> Buffer
+  → Buffer
   ⊸ Buffer
 appendExact srcLen appender = appendBounded
   srcLen
-  (\dst dstOff -> appender dst dstOff >> pure srcLen)
+  (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE appendExact #-}
 
 -- | Low-level routine to prepend data of unknown size to a 'Buffer'.
 prependBounded
-  :: Int
+  ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
-  -> (forall s. MArray s -> Int -> ST s Int)
+  → (forall s. MArray s → Int → ST s Int)
   -- ^ Action, which writes bytes finishing before the given offset
   -- and returns an actual number of bytes written.
-  -> (forall s. MArray s -> Int -> ST s Int)
+  → (forall s. MArray s → Int → ST s Int)
   -- ^ Action, which writes bytes starting from the given offset
   -- and returns an actual number of bytes written.
-  -> Buffer
-   ⊸ Buffer
+  → Buffer
+  ⊸ Buffer
 prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
   | maxSrcLen <= dstOff = Buffer $ runST $ do
     newM ← unsafeThaw dst
@@ -172,23 +172,23 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
 
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
 prependExact
-  :: Int
+  ∷ Int
   -- ^ Exact number of bytes, written by an action
-  -> (forall s. MArray s -> Int -> ST s ())
+  → (forall s. MArray s → Int → ST s ())
   -- ^ Action, which writes bytes finishing before the given offset
-  -> Buffer
+  → Buffer
   ⊸ Buffer
 prependExact srcLen appender = prependBounded
   srcLen
-  (\dst dstOff -> appender dst (dstOff - srcLen) >> pure srcLen)
-  (\dst dstOff -> appender dst dstOff >> pure srcLen)
+  (\dst dstOff → appender dst (dstOff - srcLen) >> pure srcLen)
+  (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE prependExact #-}
 
 unsafeThaw ∷ Array → ST s (MArray s)
 unsafeThaw (ByteArray a) = ST $ \s# →
   (# s#, MutableByteArray (unsafeCoerce# a) #)
 
-sizeofByteArray :: Array -> Int
+sizeofByteArray ∷ Array → Int
 sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
 
 -- | Concatenate two 'Buffer's, potentially mutating both of them.
@@ -196,7 +196,7 @@ sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
 -- You likely need to use 'dupBuffer' to get hold on two builders at once:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
--- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> runBuffer (\b -> (\(# b1, b2 #) → ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
 (><) ∷ Buffer ⊸ Buffer ⊸ Buffer

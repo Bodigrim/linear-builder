@@ -22,39 +22,39 @@ import Numeric.QuoteQuot
 import Data.Text.Builder.Linear.Core
 
 -- | Append decimal number.
-(|>$) :: (Integral a, FiniteBits a) => Buffer ⊸ a -> Buffer
+(|>$) :: (Integral a, FiniteBits a) => Buffer ⊸ a → Buffer
 infixl 6 |>$
 buffer |>$ n = appendBounded
   (maxDecLen n)
-  (\dst dstOff -> unsafeAppendDec dst dstOff n)
+  (\dst dstOff → unsafeAppendDec dst dstOff n)
   buffer
 {-# INLINABLE (|>$) #-}
 
 -- | Prepend decimal number.
-($<|) :: (Integral a, FiniteBits a) => a -> Buffer ⊸ Buffer
+($<|) :: (Integral a, FiniteBits a) => a → Buffer ⊸ Buffer
 infixr 6 $<|
 n $<| buffer = prependBounded
   (maxDecLen n)
-  (\dst dstOff -> unsafePrependDec dst dstOff n)
-  (\dst dstOff -> unsafeAppendDec dst dstOff n)
+  (\dst dstOff → unsafePrependDec dst dstOff n)
+  (\dst dstOff → unsafeAppendDec dst dstOff n)
   buffer
 {-# INLINABLE ($<|) #-}
 
 -- | ceiling (fbs a * logBase 10 2) < ceiling (fbs a * 5 / 16) < 1 + floor (fbs a * 5 / 16)
-maxDecLen :: FiniteBits a => a -> Int
+maxDecLen :: FiniteBits a => a → Int
 maxDecLen a
   | isSigned a = 2 + (finiteBitSize a * 5) `shiftR` 4
   | otherwise  = 1 + (finiteBitSize a * 5) `shiftR` 4
 {-# INLINABLE maxDecLen #-}
 
-exactDecLen :: (Integral a, FiniteBits a) => a -> Int
+exactDecLen :: (Integral a, FiniteBits a) => a → Int
 exactDecLen n
   | n < 0
   = go 2 (complement n + fromIntegral (I# (dataToTag# (n > bit (finiteBitSize n - 1)))))
   | otherwise
   = go 1 n
   where
-    go :: (Integral a, FiniteBits a) => Int -> a -> Int
+    go :: (Integral a, FiniteBits a) => Int → a → Int
     go acc k
       | finiteBitSize k >= 32, k >= 1000000000 = go (acc + 9) (quotBillion k)
       | otherwise = acc + goInt (fromIntegral k)
@@ -64,11 +64,11 @@ exactDecLen n
       | otherwise = I# (l# >=# 10000#) + I# (l# >=# 1000#) + I# (l# >=# 100#) + I# (l# >=# 10#)
 {-# INLINABLE exactDecLen #-}
 
-unsafeAppendDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
+unsafeAppendDec :: (Integral a, FiniteBits a) => A.MArray s → Int → a → ST s Int
 unsafeAppendDec marr off n = unsafePrependDec marr (off + exactDecLen n) n
 {-# INLINABLE unsafeAppendDec #-}
 
-unsafePrependDec :: (Integral a, FiniteBits a) => A.MArray s -> Int -> a -> ST s Int
+unsafePrependDec :: (Integral a, FiniteBits a) => A.MArray s → Int → a → ST s Int
 unsafePrependDec marr off n
   | n < 0, n == bit (finiteBitSize n - 1) = do
     A.unsafeWrite marr (off - 1) (fromIntegral (48 + minBoundLastDigit n))
@@ -97,38 +97,38 @@ unsafePrependDec marr off n
     digits = "00010203040506070809101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899"#
 {-# INLINABLE unsafePrependDec #-}
 
-minBoundLastDigit :: FiniteBits a => a -> Int
+minBoundLastDigit :: FiniteBits a => a → Int
 minBoundLastDigit a = case finiteBitSize a .&. 4 of
-  0 -> 8
-  1 -> 6
-  2 -> 2
-  _ -> 4
+  0 → 8
+  1 → 6
+  2 → 2
+  _ → 4
 {-# INLINABLE minBoundLastDigit #-}
 
-quot100 :: (Integral a, FiniteBits a) => a -> a
+quot100 :: (Integral a, FiniteBits a) => a → a
 quot100 a = case (finiteBitSize a, isSigned a) of
-  (64, True)  -> cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int64))
-  (64, False) -> cast $$(quoteQuot (100 :: Word64))
-  (32, True)  -> cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int32))
-  (32, False) -> cast $$(quoteQuot (100 :: Word32))
-  (16, True)  -> cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int16))
-  (16, False) -> cast $$(quoteQuot (100 :: Word16))
-  ( 8, True)  -> cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int8))
-  ( 8, False) -> cast $$(quoteQuot (100 :: Word8))
-  _ -> a `quot` 100
+  (64, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int64))
+  (64, False) → cast $$(quoteQuot (100 :: Word64))
+  (32, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int32))
+  (32, False) → cast $$(quoteQuot (100 :: Word32))
+  (16, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int16))
+  (16, False) → cast $$(quoteQuot (100 :: Word16))
+  ( 8, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int8))
+  ( 8, False) → cast $$(quoteQuot (100 :: Word8))
+  _ → a `quot` 100
   where
-    cast :: (Integral a, Integral b) => (b -> b) -> a
+    cast :: (Integral a, Integral b) => (b → b) → a
     cast f = fromIntegral (f (fromIntegral a))
 {-# INLINABLE quot100 #-}
 
-quotBillion :: (Integral a, FiniteBits a) => a -> a
+quotBillion :: (Integral a, FiniteBits a) => a → a
 quotBillion a = case (finiteBitSize a, isSigned a) of
-  (64, True)  -> cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int64))
-  (64, False) -> cast $$(quoteQuot (1e9 :: Word64))
-  (32, True)  -> cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int32))
-  (32, False) -> cast $$(quoteQuot (1e9 :: Word32))
-  _ -> a `quot` 1e9
+  (64, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int64))
+  (64, False) → cast $$(quoteQuot (1e9 :: Word64))
+  (32, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int32))
+  (32, False) → cast $$(quoteQuot (1e9 :: Word32))
+  _ → a `quot` 1e9
   where
-    cast :: (Integral a, Integral b) => (b -> b) -> a
+    cast :: (Integral a, Integral b) => (b → b) → a
     cast f = fromIntegral (f (fromIntegral a))
 {-# INLINABLE quotBillion #-}

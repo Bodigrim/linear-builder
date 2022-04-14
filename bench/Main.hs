@@ -42,7 +42,7 @@ benchLinearBuilder m = runBuffer (\b → go (b |> txt) m)
 main ∷ IO ()
 main = defaultMain $ map mkGroup [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
 
-mkGroup :: Int -> Benchmark
+mkGroup :: Int → Benchmark
 mkGroup n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchBuilder n
   , bcompare ("$NF == \"Data.Text.Lazy.Builder\" && $(NF-1) == \"" ++ show n ++ "\"")

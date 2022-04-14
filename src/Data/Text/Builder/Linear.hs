@@ -80,7 +80,7 @@ newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 -- >>> runBuilder (fromText "foo" <> fromChar '_' <> fromAddr "bar"#)
 -- "foo_bar"
 --
-runBuilder :: forall m. Builder %m -> Text
+runBuilder :: forall m. Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
 
@@ -88,11 +88,11 @@ instance Show Builder where
   show (Builder f) = show (runBuffer f)
 
 instance Semigroup Builder where
-  Builder f <> Builder g = Builder $ \b -> g (f b)
+  Builder f <> Builder g = Builder $ \b → g (f b)
   {-# INLINE (<>) #-}
 
 instance Monoid Builder where
-  mempty = Builder (\b -> b)
+  mempty = Builder (\b → b)
   {-# INLINE mempty #-}
 
 instance IsString Builder where
@@ -105,8 +105,8 @@ instance IsString Builder where
 -- >>> fromText "foo" <> fromText "bar"
 -- "foobar"
 --
-fromText :: Text -> Builder
-fromText x = Builder $ \b -> b |> x
+fromText :: Text → Builder
+fromText x = Builder $ \b → b |> x
 {-# INLINE fromText #-}
 
 -- | Create 'Builder', containing a given 'Char'.
@@ -114,8 +114,8 @@ fromText x = Builder $ \b -> b |> x
 -- >>> fromChar 'x' <> fromChar 'y'
 -- "xy"
 --
-fromChar :: Char -> Builder
-fromChar x = Builder $ \b -> b |>. x
+fromChar :: Char → Builder
+fromChar x = Builder $ \b → b |>. x
 {-# INLINE fromChar #-}
 
 -- | Create 'Builder', containing a null-terminated UTF-8 string, specified by 'Addr#'.
@@ -124,8 +124,8 @@ fromChar x = Builder $ \b -> b |>. x
 -- >>> fromAddr "foo"# <> fromAddr "bar"#
 -- "foobar"
 --
-fromAddr :: Addr# -> Builder
-fromAddr x = Builder $ \b -> b |># x
+fromAddr :: Addr# → Builder
+fromAddr x = Builder $ \b → b |># x
 {-# INLINE fromAddr #-}
 
 -- | Create 'Builder', containing decimal representation of a given number.
@@ -133,8 +133,8 @@ fromAddr x = Builder $ \b -> b |># x
 -- >>> fromChar 'x' <> fromDec (123 :: Int)
 -- "x123"
 --
-fromDec :: (Integral a, FiniteBits a) => a -> Builder
-fromDec x = Builder $ \b -> b |>$ x
+fromDec :: (Integral a, FiniteBits a) => a → Builder
+fromDec x = Builder $ \b → b |>$ x
 {-# INLINE fromDec #-}
 
 -- | Create 'Builder', containing hexadecimal representation of a given number.
@@ -143,8 +143,8 @@ fromDec x = Builder $ \b -> b |>$ x
 -- >>> fromAddr "0x"# <> fromHex (0x123def :: Int)
 -- "0x123def"
 --
-fromHex :: (Integral a, FiniteBits a) => a -> Builder
-fromHex x = Builder $ \b -> b |>& x
+fromHex :: (Integral a, FiniteBits a) => a → Builder
+fromHex x = Builder $ \b → b |>& x
 {-# INLINE fromHex #-}
 
 -- | Create 'Builder', containing a given 'Double'.
@@ -153,6 +153,6 @@ fromHex x = Builder $ \b -> b |>& x
 -- >>> fromAddr "pi="# <> fromDouble pi
 -- "pi=3.141592653589793"
 --
-fromDouble :: Double -> Builder
-fromDouble x = Builder $ \b -> b |>% x
+fromDouble :: Double → Builder
+fromDouble x = Builder $ \b → b |>% x
 {-# INLINE fromDouble #-}

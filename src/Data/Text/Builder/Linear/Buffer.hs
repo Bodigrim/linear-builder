@@ -47,7 +47,7 @@ import Data.Text.Builder.Linear.Hex
 infixl 6 |>
 buffer |> (Text src srcOff srcLen) = appendExact
   srcLen
-  (\dst dstOff -> A.copyI srcLen dst dstOff src srcOff)
+  (\dst dstOff → A.copyI srcLen dst dstOff src srcOff)
   buffer
 
 -- | Prepend 'Text' prefix to a 'Buffer' by mutating it.
@@ -61,7 +61,7 @@ buffer |> (Text src srcOff srcLen) = appendExact
 infixr 6 <|
 Text src srcOff srcLen <| buffer = prependExact
   srcLen
-  (\dst dstOff -> A.copyI srcLen dst dstOff src srcOff)
+  (\dst dstOff → A.copyI srcLen dst dstOff src srcOff)
   buffer
 
 -- | Append a null-terminated UTF-8 string
@@ -76,7 +76,7 @@ Text src srcOff srcLen <| buffer = prependExact
 infixl 6 |>#
 buffer |># addr# = appendExact
   srcLen
-  (\dst dstOff -> A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
+  (\dst dstOff → A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
   buffer
   where
     srcLen = I# (cstringLength# addr#)
@@ -93,7 +93,7 @@ buffer |># addr# = appendExact
 infixr 6 <|#
 addr# <|# buffer = prependExact
   srcLen
-  (\dst dstOff -> A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
+  (\dst dstOff → A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
   buffer
   where
     srcLen = I# (cstringLength# addr#)

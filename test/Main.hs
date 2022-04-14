@@ -118,18 +118,18 @@ prop2 acts1 acts2 = interpretOnText acts1 mempty <> interpretOnText acts2 mempty
     go ∷ (# Buffer, Buffer #) ⊸ Buffer
     go (# b1, b2 #) = interpretOnBuffer acts1 b1 >< interpretOnBuffer acts2 b2
 
-prop3 :: [Action] -> Property
+prop3 :: [Action] → Property
 prop3 acts = runBuffer f1 === runBuffer f2
   where
     addr# = "foo"#
     f1, f2 :: Buffer ⊸ Buffer
-    f1 = \b -> interpretOnBuffer acts b |># addr#
-    f2 = \b -> interpretOnBuffer acts b |> T.pack "foo"
+    f1 = \b → interpretOnBuffer acts b |># addr#
+    f2 = \b → interpretOnBuffer acts b |> T.pack "foo"
 
-prop4 :: [Action] -> Property
+prop4 :: [Action] → Property
 prop4 acts = runBuffer f1 === runBuffer f2
   where
     addr# = "foo"#
     f1, f2 :: Buffer ⊸ Buffer
-    f1 = \b -> addr# <|# interpretOnBuffer acts b
-    f2 = \b -> T.pack "foo" <| interpretOnBuffer acts b
+    f1 = \b → addr# <|# interpretOnBuffer acts b
+    f2 = \b → T.pack "foo" <| interpretOnBuffer acts b
