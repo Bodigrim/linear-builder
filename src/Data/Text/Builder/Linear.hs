@@ -80,7 +80,7 @@ newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 -- >>> runBuilder (fromText "foo" <> fromChar '_' <> fromAddr "bar"#)
 -- "foo_bar"
 --
-runBuilder :: Builder ⊸ Text
+runBuilder :: forall m. Builder %m -> Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
 
