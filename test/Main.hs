@@ -79,7 +79,7 @@ interpretOnText xs z = foldl' go z xs
     go b (PrependDouble x) = toStrict (toLazyText (realFloat x)) <> b
 
 interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
-interpretOnBuffer xs z = linearFoldl' go z xs
+interpretOnBuffer xs z = foldlIntoBuffer go z xs
   where
     go ∷ Buffer ⊸ Action → Buffer
     go b (AppendText    x) = b |> x
@@ -92,12 +92,6 @@ interpretOnBuffer xs z = linearFoldl' go z xs
     go b (PrependDec    x) = x $<| b
     go b (AppendDouble  x) = b |>% x
     go b (PrependDouble x) = x %<| b
-
-linearFoldl' ∷ (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
-linearFoldl' f = go
-  where
-    go !acc [] = acc
-    go !acc (x : xs) = go (f acc x) xs
 
 main ∷ IO ()
 main = defaultMain $ testGroup "All"

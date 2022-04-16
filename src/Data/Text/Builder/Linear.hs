@@ -72,6 +72,10 @@ import Data.Text.Builder.Linear.Buffer
 -- Remember: this is a strict builder, so on contrary to "Data.Text.Lazy.Builder"
 -- for optimal performance you should use strict left folds instead of lazy right ones.
 --
+-- Note that (similar to other builders) concatenation of 'Builder's allocates
+-- thunks. This is to a certain extent mitigated by aggressive inlining,
+-- but it is faster to use 'Buffer' directly.
+--
 newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 
 -- | Run 'Builder' computation on an empty 'Buffer', returning 'Text'.

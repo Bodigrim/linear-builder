@@ -11,6 +11,7 @@ module Data.Text.Builder.Linear.Buffer
   , dupBuffer
   , consumeBuffer
   , eraseBuffer
+  , foldlIntoBuffer
   , (|>)
   , (|>.)
   , (|>#)
@@ -72,6 +73,9 @@ Text src srcOff srcLen <| buffer = prependExact
 -- "foobar"
 --
 -- The literal string must not contain zero bytes @\\0@, this condition is not checked.
+--
+-- Note the inconsistency in naming: unfortunately, GHC parser does not allow for @#<|@.
+--
 (|>#) ∷ Buffer ⊸ Addr# → Buffer
 infixl 6 |>#
 buffer |># addr# = appendExact
@@ -97,3 +101,11 @@ addr# <|# buffer = prependExact
   buffer
   where
     srcLen = I# (cstringLength# addr#)
+
+-- | This is just a normal 'Data.List.foldl'', but with a linear arrow
+-- and potentially unlifted accumulator.
+foldlIntoBuffer ∷ (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
+foldlIntoBuffer f = go
+  where
+    go !acc [] = acc
+    go !acc (x : xs) = go (f acc x) xs

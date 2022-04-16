@@ -26,14 +26,14 @@ dbl :: Double
 dbl = - pi * 1e300
 
 benchBuilder ∷ Int → T.Text
-benchBuilder = toStrict . toLazyText . go txtB
+benchBuilder = toStrict . toLazyText . go mempty
   where
     txtB = fromText txt
     go !acc 0 = acc
     go !acc n = go (txtB <> (acc <> txtB)) (n - 1)
 
 benchLinearBuilder ∷ Int → T.Text
-benchLinearBuilder m = runBuffer (\b → go (b |> txt) m)
+benchLinearBuilder m = runBuffer (\b → go b m)
   where
     go ∷ Buffer ⊸ Int → Buffer
     go !acc 0 = acc
