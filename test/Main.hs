@@ -41,6 +41,8 @@ data Action
   | PrependDec Int
   | AppendDouble Double
   | PrependDouble Double
+  | AppendSpaces Word
+  | PrependSpaces Word
   deriving (Eq, Ord, Show, Generic)
 
 instance Arbitrary Action where
@@ -60,6 +62,8 @@ instance Arbitrary Action where
     , pure $ AppendDec 0
     , AppendDouble  <$> arbitrary
     , PrependDouble <$> arbitrary
+    , AppendSpaces . getNonNegative <$> arbitrary
+    , PrependSpaces . getNonNegative <$> arbitrary
     ]
   shrink = genericShrink
 
@@ -77,6 +81,8 @@ interpretOnText xs z = foldl' go z xs
     go b (PrependDec    x) = toStrict (toLazyText (decimal x)) <> b
     go b (AppendDouble  x) = b <> toStrict (toLazyText (realFloat x))
     go b (PrependDouble x) = toStrict (toLazyText (realFloat x)) <> b
+    go b (AppendSpaces  n) = b <> T.replicate (fromIntegral n) (T.singleton ' ')
+    go b (PrependSpaces n) = T.replicate (fromIntegral n) (T.singleton ' ') <> b
 
 interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
 interpretOnBuffer xs z = foldlIntoBuffer go z xs
@@ -92,6 +98,8 @@ interpretOnBuffer xs z = foldlIntoBuffer go z xs
     go b (PrependDec    x) = x $<| b
     go b (AppendDouble  x) = b |>% x
     go b (PrependDouble x) = x %<| b
+    go b (AppendSpaces  n) = b |>… n
+    go b (PrependSpaces n) = n …<| b
 
 main ∷ IO ()
 main = defaultMain $ testGroup "All"

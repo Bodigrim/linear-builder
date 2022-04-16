@@ -110,7 +110,7 @@ appendBounded
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
   → (forall s. MArray s → Int → ST s Int)
-  -- ^ Action, which writes bytes starting from the given offset
+  -- ^ Action, which writes bytes __starting__ from the given offset
   -- and returns an actual number of bytes written.
   → Buffer
   ⊸ Buffer
@@ -133,7 +133,7 @@ appendExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
   → (forall s. MArray s → Int → ST s ())
-  -- ^ Action, which writes bytes starting from the given offset
+  -- ^ Action, which writes bytes __starting__ from the given offset
   → Buffer
   ⊸ Buffer
 appendExact srcLen appender = appendBounded
@@ -146,10 +146,10 @@ prependBounded
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
   → (forall s. MArray s → Int → ST s Int)
-  -- ^ Action, which writes bytes finishing before the given offset
+  -- ^ Action, which writes bytes __finishing__ before the given offset
   -- and returns an actual number of bytes written.
   → (forall s. MArray s → Int → ST s Int)
-  -- ^ Action, which writes bytes starting from the given offset
+  -- ^ Action, which writes bytes __starting__ from the given offset
   -- and returns an actual number of bytes written.
   → Buffer
   ⊸ Buffer
@@ -175,7 +175,7 @@ prependExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
   → (forall s. MArray s → Int → ST s ())
-  -- ^ Action, which writes bytes finishing before the given offset
+  -- ^ Action, which writes bytes __starting__ from the given offset
   → Buffer
   ⊸ Buffer
 prependExact srcLen appender = prependBounded

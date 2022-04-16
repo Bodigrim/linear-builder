@@ -25,11 +25,14 @@ module Data.Text.Builder.Linear.Buffer
   , (%<|)
   , (|>&)
   , (&<|)
+  , (|>…)
+  , (…<|)
   ) where
 
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
 import GHC.Exts
+import GHC.ST
 
 import Data.Text.Builder.Linear.Char
 import Data.Text.Builder.Linear.Core
@@ -101,6 +104,26 @@ addr# <|# buffer = prependExact
   buffer
   where
     srcLen = I# (cstringLength# addr#)
+
+-- | Append given number of spaces.
+(|>…) ∷ Buffer ⊸ Word → Buffer
+infixr 6 |>…
+buf |>… 0 = buf
+buffer |>… (fromIntegral -> spaces@(I# spaces#)) = appendExact
+  spaces
+  (\(A.MutableByteArray dst#) (I# dstOff#) -> ST (\s# ->
+    (# setByteArray# dst# dstOff# spaces# 32# s#, () #)))
+  buffer
+
+-- | Prepend given number of spaces.
+(…<|) ∷ Word → Buffer ⊸ Buffer
+infixr 6 …<|
+0 …<| buf = buf
+(fromIntegral -> spaces@(I# spaces#)) …<| buffer = prependExact
+  spaces
+  (\(A.MutableByteArray dst#) (I# dstOff#) -> ST (\s# ->
+    (# setByteArray# dst# dstOff# spaces# 32# s#, () #)))
+  buffer
 
 -- | This is just a normal 'Data.List.foldl'', but with a linear arrow
 -- and potentially unlifted accumulator.

@@ -37,6 +37,7 @@ common stanza
     ScopedTypeVariables
     UnboxedTuples
     UnicodeSyntax
+    ViewPatterns
   if impl(ghc >= 9.2)
     default-extensions:
       UnliftedDatatypes
