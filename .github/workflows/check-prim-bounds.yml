@@ -10,22 +10,20 @@ defaults:
 jobs:
   bounds-checking:
     runs-on: ubuntu-latest
-    container:
-      image: fedora:34
     steps:
     - uses: actions/checkout@v2
-    - name: Install ghc-9.3.20220124
-      run: |
-        dnf install -y gcc gmp gmp-devel make ncurses ncurses-compat-libs xz perl
-        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 BOOTSTRAP_HASKELL_MINIMAL=1 sh
-        source ~/.ghcup/env
-        ghcup install ghc -u https://downloads.haskell.org/~ghcup/unofficial-bindists/ghc/9.3.20220124/ghc-9.3.20220124-x86_64-linux-fedora-34-bounds-checking-ddf50f4b.tar.xz --set 9.3.20220124
-        ghcup install cabal
+    - uses: haskell/actions/setup@v1
+      id: setup-haskell-cabal
+      with:
+        ghc-version: "9.2.2"
     - name: Update cabal package database
-      run: |
-        source ~/.ghcup/env
-        cabal update
+      run: cabal update
+    - uses: actions/cache@v2
+      name: Cache cabal stuff
+      with:
+        path: |
+          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+          dist-newstyle
+        key: ${{ runner.os }}-9.2.2
     - name: Test
-      run: |
-        source ~/.ghcup/env
-        cabal test -w ghc-9.3.20220124 --ghc-options='-fcheck-prim-bounds' --constraint 'text +developer'
+      run: cabal test --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts' --constraint 'text +developer'
