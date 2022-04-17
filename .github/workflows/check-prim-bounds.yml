@@ -28,4 +28,4 @@ jobs:
     - name: Test
       run: |
         source ~/.ghcup/env
-        cabal test -w ghc-9.3.20220124 --ghc-options='-fcheck-prim-bounds'
+        cabal test -w ghc-9.3.20220124 --ghc-options='-fcheck-prim-bounds' --constraint 'text +developer'
