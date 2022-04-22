@@ -84,6 +84,9 @@ newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 -- >>> runBuilder (fromText "foo" <> fromChar '_' <> fromAddr "bar"#)
 -- "foo_bar"
 --
+-- This function has a polymorphic arrow and thus can be used both in
+-- usual and linear contexts.
+--
 runBuilder :: forall m. Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
