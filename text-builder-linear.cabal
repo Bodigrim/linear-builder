@@ -72,6 +72,12 @@ benchmark linear-builder-bench
   import: stanza
   type: exitcode-stdio-1.0
   main-is: Main.hs
+  other-modules:
+    BenchChar
+    BenchDecimal
+    BenchDouble
+    BenchHexadecimal
+    BenchText
   hs-source-dirs: bench
   ghc-options: -rtsopts
   build-depends:
@@ -79,4 +85,4 @@ benchmark linear-builder-bench
     -- text-builder,
     tasty-bench >= 0.3
   default-language: Haskell2010
-  ghc-options: -O2 -Wno-unused-imports
+  ghc-options: -O2
