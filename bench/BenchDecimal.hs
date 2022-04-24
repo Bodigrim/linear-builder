@@ -47,9 +47,7 @@ mkGroup :: Int → Benchmark
 mkGroup n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchLazyBuilder n
 #ifdef MIN_VERSION_text_builder
-  , bcompare ("$NF == \"Data.Text.Lazy.Builder\" && $(NF-1) == \"" ++ show n ++ "\" && $(NF-2) == \"Decimal\"")
-  $ bench "Text.Builder" $ nf benchStrictBuilder n
+  , bench "Text.Builder" $ nf benchStrictBuilder n
 #endif
-  , bcompare ("$NF == \"Data.Text.Lazy.Builder\" && $(NF-1) == \"" ++ show n ++ "\" && $(NF-2) == \"Decimal\"")
-  $ bench "Data.Text.Builder.Linear" $ nf benchLinearBuilder n
+  , bench "Data.Text.Builder.Linear" $ nf benchLinearBuilder n
   ]
