@@ -11,6 +11,7 @@ module Data.Text.Builder.Linear.Core
   , dupBuffer
   , consumeBuffer
   , eraseBuffer
+  , sizeBuffer
   , appendBounded
   , appendExact
   , prependBounded
@@ -104,6 +105,11 @@ consumeBuffer Buffer{} = ()
 -- | Erase buffer's content, replacing it with an empty 'Text'.
 eraseBuffer ∷ Buffer ⊸ Buffer
 eraseBuffer Buffer{} = Buffer mempty
+
+-- | Return buffer's size in __bytes__ (not in 'Char's).
+-- This could be useful to implement a lazy builder atop of a strict one.
+sizeBuffer ∷ Buffer ⊸ (# Buffer, Word #)
+sizeBuffer (Buffer t@(Text _ _ len)) = (# Buffer t, fromIntegral len #)
 
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
 appendBounded
