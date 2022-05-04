@@ -11,7 +11,10 @@ module Data.Text.Builder.Linear.Core
   , dupBuffer
   , consumeBuffer
   , eraseBuffer
-  , sizeBuffer
+  , byteSizeOfBuffer
+  , lengthOfBuffer
+  , dropBuffer
+  , takeBuffer
   , appendBounded
   , appendExact
   , prependBounded
@@ -108,8 +111,38 @@ eraseBuffer Buffer{} = Buffer mempty
 
 -- | Return buffer's size in __bytes__ (not in 'Char's).
 -- This could be useful to implement a lazy builder atop of a strict one.
-sizeBuffer ∷ Buffer ⊸ (# Buffer, Word #)
-sizeBuffer (Buffer t@(Text _ _ len)) = (# Buffer t, fromIntegral len #)
+byteSizeOfBuffer ∷ Buffer ⊸ (# Buffer, Word #)
+byteSizeOfBuffer (Buffer t@(Text _ _ len)) = (# Buffer t, fromIntegral len #)
+
+-- | Return buffer's length in 'Char's (not in bytes).
+-- This could be useful to implement @dropEndBuffer@ and @takeEndBuffer@, e. g.,
+--
+-- @
+-- import Data.Unrestricted.Linear
+--
+-- dropEndBuffer :: Word -> Buffer %1 -> Buffer
+-- dropEndBuffer n buf =
+--   (\(# buf', len #) -> case move len of Ur len' -> takeBuffer (len' - n) buf')
+--     (lengthOfBuffer buf)
+-- @
+lengthOfBuffer ∷ Buffer ⊸ (# Buffer, Word #)
+lengthOfBuffer (Buffer t) = (# Buffer t, fromIntegral (T.length t) #)
+
+-- | Slice 'Buffer' by dropping given number of 'Char's.
+dropBuffer ∷ Word → Buffer ⊸ Buffer
+dropBuffer nChar (Buffer t@(Text arr off len))
+  | nByte <= 0 = Buffer (Text arr (off + len) 0)
+  | otherwise = Buffer (Text arr (off + nByte) (len - nByte))
+  where
+    nByte = T.measureOff (fromIntegral nChar) t
+
+-- | Slice 'Buffer' by taking given number of 'Char's.
+takeBuffer ∷ Word → Buffer ⊸ Buffer
+takeBuffer nChar (Buffer t@(Text arr off _))
+  | nByte <= 0 = Buffer t
+  | otherwise = Buffer (Text arr off nByte)
+  where
+    nByte = T.measureOff (fromIntegral nChar) t
 
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
 appendBounded
