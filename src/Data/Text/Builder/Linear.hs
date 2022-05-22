@@ -3,48 +3,10 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
--- 'Builder' for strict 'Text', based on linear types.
--- It's consistently outperforms
--- 'Data.Text.Lazy.toStrict' . 'Data.Text.Lazy.Builder.toLazyText'
--- and scales better:
---
--- @
--- 1
---   Data.Text.Lazy.Builder:
---     73.9 ns ± 6.8 ns
---   Data.Text.Builder.Linear:
---     33.0 ns ± 2.2 ns, 0.45x
--- 10
---   Data.Text.Lazy.Builder:
---     702  ns ±  70 ns
---   Data.Text.Builder.Linear:
---     178  ns ±  16 ns, 0.25x
--- 100
---   Data.Text.Lazy.Builder:
---     6.57 μs ± 292 ns
---   Data.Text.Builder.Linear:
---     1.58 μs ± 116 ns, 0.24x
--- 1000
---   Data.Text.Lazy.Builder:
---     74.7 μs ± 2.9 μs
---   Data.Text.Builder.Linear:
---     13.9 μs ± 1.2 μs, 0.19x
--- 10000
---   Data.Text.Lazy.Builder:
---     1.63 ms ±  64 μs
---   Data.Text.Builder.Linear:
---     220  μs ±  16 μs, 0.13x
--- 100000
---   Data.Text.Lazy.Builder:
---     26.2 ms ± 2.5 ms
---   Data.Text.Builder.Linear:
---     3.25 ms ± 294 μs, 0.12x
--- 1000000
---   Data.Text.Lazy.Builder:
---     302  ms ± 8.9 ms
---   Data.Text.Builder.Linear:
---     30.8 ms ± 3.1 ms, 0.10x
--- @
+-- Builder for strict 'Text', based on linear types. It's consistently
+-- outperforms "Data.Text.Lazy.Builder"
+-- from @text@ as well as a strict builder from @text-builder@,
+-- and scales better.
 
 module Data.Text.Builder.Linear
   ( Builder(..)

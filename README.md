@@ -8,11 +8,44 @@ and scales better.
 
 ## Design
 
-WIP
+String builders in Haskell serve the same purpose as `StringBuilder` in Java to prevent
+quadratic slow down in concatenation.
+
+Classic builders such as `Data.Text.Lazy.Builder` are lazy and fundamentally are
+[`dlist`](https://hackage.haskell.org/package/dlist) with bells and whistles:
+instead of actually concatenating substrings we compose actions, which implement
+concatenation, building a tree of thunks. The tree can be forced partially, left-to-right,
+producing chunks of strict `Text`, combined into a lazy one. Neither input, nor output need to be materialized in full, which potentially allows for fusion. Such builders allow
+linear time complexity, but constant factors are relatively high, because thunks are
+expensive. To a certain degree this is mitigated by inlining, which massively reduces
+number of nodes.
+
+Strict builders such as [`text-builder`](https://hackage.haskell.org/package/text-builder)
+offer another design: they first inspect their input in full to determine output length,
+then allocate a buffer of required size and fill it in one go. If everything inlines nicely,
+the length may be known in compile time, which gives blazingly fast runtime. In more
+complex cases it still builds a tree of thunks and forces all inputs to be materialized.
+
+This package offers two interfaces. One is a mutable `Buffer` with linear API,
+which operates very similar to `StringBuilder` in Java. It allocates a buffer
+with extra space at the ends to append new strings. If there is not enough free space
+to insert new data, it allocates a twice larger buffer and copies itself there.
+The dispatch happens in runtime, so we do not need to inspect and materialise all inputs
+beforehand; and inlining is mostly irrelevant.
+Exponential growth provides for amortized linear time.
+Such structure can be implemented without linear types, but that would
+greatly affect user experience by polluting everything with `ST` monad.
+Users are encouraged to use `Buffer` API, and built-in benchmarks refer to it.
+
+The second interface is more traditional `newtype Builder = Builder (Buffer ⊸ Buffer)`
+with `Monoid` instance. This type provides easy migration from other builders,
+but may suffer from insufficient inlining, allocating a tree of thunks. It is still
+significantly faster than `Data.Text.Lazy.Builder`, as witnessed by benchmarks
+for `blaz-builder` below.
 
 ## Benchmarks
 
-|Group / size|`text`|`text-builder`|  |This package|  |
+|Group / size|`text`|`text-builder`|Ratio|This package|Ratio|
 |------------|-----:|-------------:|-:|-----------:|-:|
 | **Text** ||||||
 |1|69.2 ns|37.0 ns|0.53x|36.8 ns|0.53x|
@@ -56,21 +89,22 @@ WIP
 |1000000|12.599 s|65.467 s|5.20x|653 ms|0.05x|
 
 If you are not convinced by synthetic data,
-here are benchmarks for `blaze-markup` after migration to `Data.Text.Builder.Linear`:
+here are benchmarks for
+[`blaze-markup` after migration to `Data.Text.Builder.Linear`](https://github.com/Bodigrim/blaze-markup):
 
 ```
 bigTable
-  992  μs ±  80 μs, 49% faster than baseline
+  992  μs ±  80 μs, 49% less than baseline
 basic
-  4.35 μs ± 376 ns, 47% faster than baseline
+  4.35 μs ± 376 ns, 47% less than baseline
 wideTree
-  1.26 ms ±  85 μs, 53% faster than baseline
+  1.26 ms ±  85 μs, 53% less than baseline
 wideTreeEscaping
-  217  μs ± 7.8 μs, 58% faster than baseline
+  217  μs ± 7.8 μs, 58% less than baseline
 deepTree
-  242  μs ±  23 μs, 48% faster than baseline
+  242  μs ±  23 μs, 48% less than baseline
 manyAttributes
-  811  μs ±  79 μs, 58% faster than baseline
+  811  μs ±  79 μs, 58% less than baseline
 customAttribute
-  1.68 ms ± 135 μs, 56% faster than baseline
+  1.68 ms ± 135 μs, 56% less than baseline
 ```
