@@ -40,6 +40,7 @@ import GHC.ST
 -- and @Dupable@ (see 'dupBuffer'), but not @Movable@.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
+-- >>> import Data.Text.Builder.Linear.Buffer
 -- >>> runBuffer (\b -> '!' .<| "foo" <| (b |> "bar" |>. '.'))
 -- "!foobar."
 --
@@ -91,7 +92,8 @@ runBuffer f = unBuffer (f (Buffer mempty))
 -- Instead write:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
--- >>> runBuffer (\b -> (\(# b1, b2 #) → ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> import Data.Text.Builder.Linear.Buffer
+-- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
 -- Note the unboxed tuple: starting from GHC 9.2, 'Buffer' is an unlifted datatype,
@@ -235,7 +237,8 @@ sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
 -- You likely need to use 'dupBuffer' to get hold on two builders at once:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
--- >>> runBuffer (\b -> (\(# b1, b2 #) → ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> import Data.Text.Builder.Linear.Buffer
+-- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
 (><) ∷ Buffer ⊸ Buffer ⊸ Buffer

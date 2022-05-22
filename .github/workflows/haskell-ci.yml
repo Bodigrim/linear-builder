@@ -195,7 +195,7 @@ jobs:
       - name: docspec
         run: |
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH all
-          cabal-docspec $ARG_COMPILER --timeout 2
+          if [ $((HCNUMVER >= 90200)) -ne 0 ] ; then cabal-docspec $ARG_COMPILER --timeout 2 ; fi
       - name: cabal check
         run: |
           cd ${PKGDIR_text_builder_linear} || false
