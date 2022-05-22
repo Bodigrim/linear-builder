@@ -6,6 +6,15 @@ Builder for strict `Text`, based on linear types. It's consistently
 outperforms lazy `Builder` from `text` as well as a strict builder from `text-builder`,
 and scales better.
 
+## Example
+
+```haskell
+> :set -XOverloadedStrings
+> import Data.Text.Builder.Linear
+> fromText "foo" <> fromChar '_' <> fromDec (42 :: Int)
+"foo_42"
+```
+
 ## Design
 
 String builders in Haskell serve the same purpose as `StringBuilder` in Java to prevent
