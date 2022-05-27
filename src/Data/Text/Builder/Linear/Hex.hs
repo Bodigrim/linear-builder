@@ -8,11 +8,11 @@ module Data.Text.Builder.Linear.Hex
   , (&<|)
   ) where
 
-import Data.Bits
+import Data.Bits (FiniteBits(..), Bits(..))
 import Data.Foldable (forM_)
 import qualified Data.Text.Array as A
-import GHC.Exts
-import GHC.ST
+import GHC.Exts (Int(..), (>#), (<=#))
+import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
 

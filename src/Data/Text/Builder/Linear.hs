@@ -19,9 +19,9 @@ module Data.Text.Builder.Linear
   , fromDouble
   ) where
 
-import Data.Bits
+import Data.Bits (FiniteBits)
 import Data.Text.Internal (Text(..))
-import GHC.Exts
+import GHC.Exts (IsString(..), Addr#)
 
 import Data.Text.Builder.Linear.Buffer
 

@@ -2,8 +2,13 @@
 -- Copyright:   (c) 2022 Andrew Lelechenko
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
+--
+-- Generate a markdown table used in README
+-- from benchmark results in CSV.
 
-module Main where
+module Main
+  ( main
+  ) where
 
 import Data.Function
 import Data.List
@@ -64,4 +69,3 @@ showPicos4 i
   | otherwise = printf "%4.3f s"  (t / 1e12)
   where
     t = fromIntegral i :: Double
-

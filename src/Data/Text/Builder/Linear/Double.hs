@@ -11,12 +11,12 @@ module Data.Text.Builder.Linear.Double
 import qualified Data.ByteString.Builder as BB
 import qualified Data.ByteString.Builder.Internal as BBI
 import qualified Data.Text.Array as A
-import Data.Word
-import GHC.Exts
-import GHC.ForeignPtr
-import GHC.IO
-import GHC.Ptr
-import GHC.ST
+import Data.Word (Word8)
+import GHC.Exts (Ptr(..))
+import GHC.ForeignPtr (touchForeignPtr, unsafeForeignPtrToPtr, unsafeWithForeignPtr, ForeignPtr)
+import GHC.IO (unsafeIOToST, unsafeSTToIO, unsafeDupablePerformIO)
+import GHC.Ptr (minusPtr)
+import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
 
@@ -60,7 +60,7 @@ buildStepToFirstChunk :: BBI.BuildStep a → IO (ForeignPtr Word8, Int)
 buildStepToFirstChunk = \step → BBI.newBuffer maxDblLen >>= fill step
   where
     fill !step (BBI.Buffer fpbuf br) = do
-      let doneH op' _ = pure $ (fpbuf, op' `minusPtr` unsafeForeignPtrToPtr fpbuf)
+      let doneH op' _ = pure (fpbuf, op' `minusPtr` unsafeForeignPtrToPtr fpbuf)
           fullH _ _ nextStep = BBI.newBuffer maxDblLen >>= fill nextStep
       res ← BBI.fillWithBuildStep step doneH fullH undefined br
       touchForeignPtr fpbuf

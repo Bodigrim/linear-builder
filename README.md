@@ -39,7 +39,7 @@ This package offers two interfaces. One is a mutable `Buffer` with linear API,
 which operates very similar to `StringBuilder` in Java. It allocates a buffer
 with extra space at the ends to append new strings. If there is not enough free space
 to insert new data, it allocates a twice larger buffer and copies itself there.
-The dispatch happens in runtime, so we do not need to inspect and materialise all inputs
+The dispatch happens in runtime, so we do not need to inspect and materialize all inputs
 beforehand; and inlining is mostly irrelevant.
 Exponential growth provides for amortized linear time.
 Such structure can be implemented without linear types, but that would
@@ -50,7 +50,7 @@ The second interface is more traditional `newtype Builder = Builder (Buffer ⊸ 
 with `Monoid` instance. This type provides easy migration from other builders,
 but may suffer from insufficient inlining, allocating a tree of thunks. It is still
 significantly faster than `Data.Text.Lazy.Builder`, as witnessed by benchmarks
-for `blaz-builder` below.
+for `blaze-builder` below.
 
 ## Benchmarks
 

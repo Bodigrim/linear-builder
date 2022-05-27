@@ -10,14 +10,14 @@ module Data.Text.Builder.Linear.Dec
   , ($<|)
   ) where
 
-import Data.Bits
-import Data.Int
+import Data.Bits (FiniteBits(..), Bits(..))
+import Data.Int (Int8, Int16, Int32, Int64)
 import qualified Data.Text.Array as A
-import Data.Word
-import GHC.Exts
+import Data.Word (Word8, Word16, Word32, Word64)
+import GHC.Exts (Addr#, Int(..), Ptr(..), (>=#), dataToTag#)
 import GHC.Ptr (plusPtr)
-import GHC.ST
-import Numeric.QuoteQuot
+import GHC.ST (ST)
+import Numeric.QuoteQuot (assumeNonNegArg, astQuot, quoteAST, quoteQuot)
 
 import Data.Text.Builder.Linear.Core
 

@@ -26,8 +26,11 @@ import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
-import GHC.Exts
-import GHC.ST
+import GHC.Exts (unsafeCoerce#, Int(..), sizeofByteArray#)
+#if MIN_VERSION_base(4,16,0)
+import GHC.Exts (TYPE, Levity(..), RuntimeRep(..))
+#endif
+import GHC.ST (ST(..), runST)
 
 -- | Internally 'Buffer' is a mutable buffer.
 -- If a client gets hold of a variable of type 'Buffer',

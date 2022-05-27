@@ -31,8 +31,8 @@ module Data.Text.Builder.Linear.Buffer
 
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
-import GHC.Exts
-import GHC.ST
+import GHC.Exts (cstringLength#, Addr#, Int(..), Ptr(..), setByteArray#)
+import GHC.ST (ST(..))
 
 import Data.Text.Builder.Linear.Char
 import Data.Text.Builder.Linear.Core
