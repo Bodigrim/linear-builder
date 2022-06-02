@@ -1,4 +1,4 @@
-# linear-builder [![Hackage](http://img.shields.io/hackage/v/linear-builder.svg)](https://hackage.haskell.org/package/linear-builder) [![Stackage LTS](http://stackage.org/package/linear-builder/badge/lts)](http://stackage.org/lts/package/linear-builder) [![Stackage Nightly](http://stackage.org/package/linear-builder/badge/nightly)](http://stackage.org/nightly/package/linear-builder)
+# text-builder-linear [![Hackage](http://img.shields.io/hackage/v/text-builder-linear.svg)](https://hackage.haskell.org/package/text-builder-linear) [![Stackage LTS](http://stackage.org/package/linear-builder/badge/lts)](http://stackage.org/lts/package/linear-builder) [![Stackage Nightly](http://stackage.org/package/linear-builder/badge/nightly)](http://stackage.org/nightly/package/linear-builder)
 
 _Linear types for linear times!_
 
