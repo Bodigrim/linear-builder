@@ -1,4 +1,3 @@
 installed: +all -text
 docspec: True
 docspec-options: --timeout 2
-ghcup-version: 0.1.17.8
