@@ -84,6 +84,6 @@ benchmark linear-builder-bench
     text-builder-linear,
     -- text-builder,
     tasty >= 1.4.2,
-    tasty-bench >= 0.3
+    tasty-bench >= 0.3.2
   default-language: Haskell2010
   ghc-options: -O2
