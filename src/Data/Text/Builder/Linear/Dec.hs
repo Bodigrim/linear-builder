@@ -69,7 +69,7 @@ unsafeAppendDec marr off n = unsafePrependDec marr (off + exactDecLen n) n
 {-# INLINABLE unsafeAppendDec #-}
 
 unsafePrependDec :: (Integral a, FiniteBits a) => A.MArray s → Int → a → ST s Int
-unsafePrependDec marr off n
+unsafePrependDec marr !off n
   | n < 0, n == bit (finiteBitSize n - 1) = do
     A.unsafeWrite marr (off - 1) (fromIntegral (48 + minBoundLastDigit n))
     go (off - 2) (abs (bit (finiteBitSize n - 1) `quot` 10)) >>= sign
@@ -77,7 +77,7 @@ unsafePrependDec marr off n
     A.unsafeWrite marr (off - 1) 0x30 >> pure 1
   | otherwise = go (off - 1) (abs n) >>= sign
   where
-    sign o
+    sign !o
       | n > 0 = pure (off - o)
       | otherwise = do
         A.unsafeWrite marr (o - 1) 0x2d -- '-'
