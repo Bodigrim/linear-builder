@@ -56,7 +56,7 @@ exactDecLen n
   where
     go :: (Integral a, FiniteBits a) => Int → a → Int
     go acc k
-      | finiteBitSize k >= 32, k >= 1000000000 = go (acc + 9) (quotBillion k)
+      | finiteBitSize k >= 30, k >= 1000000000 = go (acc + 9) (quotBillion k)
       | otherwise = acc + goInt (fromIntegral k)
 
     goInt l@(I# l#)
