@@ -67,6 +67,10 @@ test-suite linear-builder-tests
     tasty-quickcheck
   hs-source-dirs: test
   ghc-options: -Wno-orphans -threaded -rtsopts "-with-rtsopts -N"
+  default-extensions:
+    DerivingStrategies,
+    GeneralizedNewtypeDeriving,
+    PatternSynonyms
 
 benchmark linear-builder-bench
   import: stanza

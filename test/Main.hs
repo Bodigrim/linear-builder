@@ -5,6 +5,7 @@
 
 module Main where
 
+import Data.Bits (Bits(..), FiniteBits(..))
 import Data.Foldable
 import qualified Data.Text as T
 import Data.Text.Builder.Linear.Buffer
@@ -15,7 +16,7 @@ import Data.Text.Lazy.Builder.Int (decimal, hexadecimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import GHC.Generics
 import Test.Tasty
-import Test.Tasty.QuickCheck hiding ((><))
+import Test.Tasty.QuickCheck hiding ((><), (.&.))
 
 instance Arbitrary Text where
   arbitrary = do
@@ -39,6 +40,8 @@ data Action
   | PrependHex Word
   | AppendDec Int
   | PrependDec Int
+  | AppendDec30 Int30
+  | PrependDec30 Int30
   | AppendDouble Double
   | PrependDouble Double
   | AppendSpaces Word
@@ -55,6 +58,8 @@ instance Arbitrary Action where
     , PrependHex    <$> arbitraryBoundedIntegral
     , AppendDec     <$> arbitraryBoundedIntegral
     , PrependDec    <$> arbitraryBoundedIntegral
+    , AppendDec30   <$> arbitraryBoundedIntegral
+    , PrependDec30  <$> arbitraryBoundedIntegral
     , pure $ AppendHex minBound
     , pure $ AppendHex maxBound
     , pure $ AppendDec minBound
@@ -79,6 +84,8 @@ interpretOnText xs z = foldl' go z xs
     go b (PrependHex    x) = toStrict (toLazyText (hexadecimal x)) <> b
     go b (AppendDec     x) = b <> toStrict (toLazyText (decimal x))
     go b (PrependDec    x) = toStrict (toLazyText (decimal x)) <> b
+    go b (AppendDec30   x) = b <> toStrict (toLazyText (decimal x))
+    go b (PrependDec30  x) = toStrict (toLazyText (decimal x)) <> b
     go b (AppendDouble  x) = b <> toStrict (toLazyText (realFloat x))
     go b (PrependDouble x) = toStrict (toLazyText (realFloat x)) <> b
     go b (AppendSpaces  n) = b <> T.replicate (fromIntegral n) (T.singleton ' ')
@@ -96,6 +103,8 @@ interpretOnBuffer xs z = foldlIntoBuffer go z xs
     go b (PrependHex    x) = x &<| b
     go b (AppendDec     x) = b |>$ x
     go b (PrependDec    x) = x $<| b
+    go b (AppendDec30   x) = b |>$ x
+    go b (PrependDec30  x) = x $<| b
     go b (AppendDouble  x) = b |>% x
     go b (PrependDouble x) = x %<| b
     go b (AppendSpaces  n) = b |>… n
@@ -135,3 +144,47 @@ prop4 acts = runBuffer f1 === runBuffer f2
     f1, f2 :: Buffer ⊸ Buffer
     f1 = \b → addr# <|# interpretOnBuffer acts b
     f2 = \b → T.pack "foo" <| interpretOnBuffer acts b
+
+-------------------------------------------------------------------------------
+
+newtype Int30 = Int30' Int
+  deriving stock (Eq, Ord, Show)
+  deriving newtype (Enum, Real, Integral)
+
+pattern Int30 :: Int -> Int30
+pattern Int30 x <- Int30' x where
+  Int30 x = Int30' (x .&. ((1 `shiftL` 30) - 1))
+{-# COMPLETE Int30 #-}
+
+instance Arbitrary Int30 where
+  arbitrary = Int30 <$> arbitrary
+  shrink (Int30 x) = Int30 <$> shrink x
+
+instance Bounded Int30 where
+  minBound = negate (1 `shiftL` 30)
+  maxBound = (1 `shiftL` 30) - 1
+
+instance Num Int30 where
+  Int30 x + Int30 y = Int30 (x + y)
+  Int30 x * Int30 y = Int30 (x * y)
+  abs (Int30 x) = Int30 (abs x)
+  signum = undefined
+  negate  (Int30 x) = Int30 (negate x)
+  fromInteger x = Int30 (fromInteger x)
+
+instance Bits Int30 where
+  (.&.) = undefined
+  (.|.) = undefined
+  xor = undefined
+  complement = undefined
+  shift (Int30 x) i = Int30 (shift x i)
+  rotate = undefined
+  bitSize = const 30
+  bitSizeMaybe = const (Just 30)
+  isSigned = const True
+  testBit = undefined
+  bit = undefined
+  popCount = undefined
+
+instance FiniteBits Int30 where
+  finiteBitSize = const 30
