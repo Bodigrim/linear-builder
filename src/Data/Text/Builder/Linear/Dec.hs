@@ -4,6 +4,9 @@
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 
 {-# LANGUAGE TemplateHaskell #-}
+#ifdef aarch64_HOST_ARCH
+{-# OPTIONS_GHC -Wno-unused-imports -Wno-unused-top-binds #-}
+#endif
 
 module Data.Text.Builder.Linear.Dec
   ( (|>$)
@@ -85,8 +88,7 @@ unsafePrependDec marr !off n
 
     go o k
       | k >= 10 = do
-        let q = quot100 k
-            r = k - 100 * q
+        let (q, r) = quotRem100 k
         A.copyFromPointer marr (o - 1) (Ptr digits `plusPtr` (fromIntegral r `shiftL` 1)) 2
         if k < 100 then pure (o - 1) else go (o - 2) q
       | otherwise = do
@@ -105,6 +107,15 @@ minBoundLastDigit a = case finiteBitSize a .&. 4 of
   _ → 4
 {-# INLINABLE minBoundLastDigit #-}
 
+quotRem100 :: (Integral a, FiniteBits a) => a → (a, a)
+-- https://gitlab.haskell.org/ghc/ghc/-/issues/22933
+#ifdef aarch64_HOST_ARCH
+quotRem100 a = a `quotRem` 100
+#else
+quotRem100 a = let q = quot100 a in (q, a - 100 * q)
+#endif
+{-# INLINABLE quotRem100 #-}
+
 quot100 :: (Integral a, FiniteBits a) => a → a
 quot100 a = case (finiteBitSize a, isSigned a) of
   (64, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int64))
@@ -122,6 +133,9 @@ quot100 a = case (finiteBitSize a, isSigned a) of
 {-# INLINABLE quot100 #-}
 
 quotBillion :: (Integral a, FiniteBits a) => a → a
+#ifdef aarch64_HOST_ARCH
+quotBillion a = a `quot` 1e9
+#else
 quotBillion a = case (finiteBitSize a, isSigned a) of
   (64, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int64))
   (64, False) → cast $$(quoteQuot (1e9 :: Word64))
@@ -131,4 +145,5 @@ quotBillion a = case (finiteBitSize a, isSigned a) of
   where
     cast :: (Integral a, Integral b) => (b → b) → a
     cast f = fromIntegral (f (fromIntegral a))
+#endif
 {-# INLINABLE quotBillion #-}
