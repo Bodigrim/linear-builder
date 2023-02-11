@@ -93,6 +93,8 @@ fromChar x = Builder $ \b → b |>. x
 -- >>> fromAddr "foo"# <> fromAddr "bar"#
 -- "foobar"
 --
+-- The literal string must not contain zero bytes @\\0@, this condition is not checked.
+--
 fromAddr :: Addr# → Builder
 fromAddr x = Builder $ \b → b |># x
 {-# INLINE fromAddr #-}
