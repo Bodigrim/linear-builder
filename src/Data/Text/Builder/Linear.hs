@@ -83,6 +83,9 @@ fromText x = Builder $ \b → b |> x
 -- >>> fromChar 'x' <> fromChar 'y'
 -- "xy"
 --
+-- In contrast to 'Data.Text.Lazy.Builder.singleton', it's a responsibility
+-- of the caller to sanitize surrogate code points with 'Data.Text.Internal.safe'.
+--
 fromChar :: Char → Builder
 fromChar x = Builder $ \b → b |>. x
 {-# INLINE fromChar #-}

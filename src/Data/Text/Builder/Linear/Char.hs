@@ -22,6 +22,9 @@ import Data.Text.Builder.Linear.Core
 -- >>> runBuffer (\b -> b |>. 'q' |>. 'w')
 -- "qw"
 --
+-- In contrast to 'Data.Text.Lazy.Builder.singleton', it's a responsibility
+-- of the caller to sanitize surrogate code points with 'Data.Text.Internal.safe'.
+--
 (|>.) ∷ Buffer ⊸ Char → Buffer
 infixl 6 |>.
 buffer |>. ch = appendBounded 4 (\dst dstOff → unsafeWrite dst dstOff ch) buffer
@@ -31,6 +34,9 @@ buffer |>. ch = appendBounded 4 (\dst dstOff → unsafeWrite dst dstOff ch) buff
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> 'q' .<| 'w' .<| b)
 -- "qw"
+--
+-- In contrast to 'Data.Text.Lazy.Builder.singleton', it's a responsibility
+-- of the caller to sanitize surrogate code points with 'Data.Text.Internal.safe'.
 --
 (.<|) ∷ Char → Buffer ⊸ Buffer
 infixr 6 .<|
