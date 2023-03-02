@@ -7,23 +7,22 @@
 -- outperforms "Data.Text.Lazy.Builder"
 -- from @text@ as well as a strict builder from @text-builder@,
 -- and scales better.
-
-module Data.Text.Builder.Linear
-  ( Builder(..)
-  , runBuilder
-  , runBuilderBS
-  , fromText
-  , fromChar
-  , fromAddr
-  , fromDec
-  , fromHex
-  , fromDouble
-  ) where
+module Data.Text.Builder.Linear (
+  Builder (..),
+  runBuilder,
+  runBuilderBS,
+  fromText,
+  fromChar,
+  fromAddr,
+  fromDec,
+  fromHex,
+  fromDouble,
+) where
 
 import Data.Bits (FiniteBits)
-import Data.ByteString.Internal (ByteString(..))
-import Data.Text.Internal (Text(..))
-import GHC.Exts (IsString(..), Addr#)
+import Data.ByteString.Internal (ByteString (..))
+import Data.Text.Internal (Text (..))
+import GHC.Exts (Addr#, IsString (..))
 
 import Data.Text.Builder.Linear.Buffer
 
@@ -39,8 +38,7 @@ import Data.Text.Builder.Linear.Buffer
 -- Note that (similar to other builders) concatenation of 'Builder's allocates
 -- thunks. This is to a certain extent mitigated by aggressive inlining,
 -- but it is faster to use 'Buffer' directly.
---
-newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
+newtype Builder = Builder {unBuilder ∷ Buffer ⊸ Buffer}
 
 -- | Run 'Builder' computation on an empty 'Buffer', returning 'Text'.
 --
@@ -50,8 +48,7 @@ newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 --
 -- This function has a polymorphic arrow and thus can be used both in
 -- usual and linear contexts.
---
-runBuilder :: forall m. Builder %m → Text
+runBuilder ∷ ∀ m. Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
 
@@ -80,8 +77,7 @@ instance IsString Builder where
 -- >>> :set -XOverloadedStrings
 -- >>> fromText "foo" <> fromText "bar"
 -- "foobar"
---
-fromText :: Text → Builder
+fromText ∷ Text → Builder
 fromText x = Builder $ \b → b |> x
 {-# INLINE fromText #-}
 
@@ -92,8 +88,7 @@ fromText x = Builder $ \b → b |> x
 --
 -- In contrast to 'Data.Text.Lazy.Builder.singleton', it's a responsibility
 -- of the caller to sanitize surrogate code points with 'Data.Text.Internal.safe'.
---
-fromChar :: Char → Builder
+fromChar ∷ Char → Builder
 fromChar x = Builder $ \b → b |>. x
 {-# INLINE fromChar #-}
 
@@ -104,8 +99,7 @@ fromChar x = Builder $ \b → b |>. x
 -- "foobar"
 --
 -- The literal string must not contain zero bytes @\\0@, this condition is not checked.
---
-fromAddr :: Addr# → Builder
+fromAddr ∷ Addr# → Builder
 fromAddr x = Builder $ \b → b |># x
 {-# INLINE fromAddr #-}
 
@@ -113,8 +107,7 @@ fromAddr x = Builder $ \b → b |># x
 --
 -- >>> fromChar 'x' <> fromDec (123 :: Int)
 -- "x123"
---
-fromDec :: (Integral a, FiniteBits a) => a → Builder
+fromDec ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromDec x = Builder $ \b → b |>$ x
 {-# INLINE fromDec #-}
 
@@ -123,8 +116,7 @@ fromDec x = Builder $ \b → b |>$ x
 -- >>> :set -XMagicHash
 -- >>> fromAddr "0x"# <> fromHex (0x123def :: Int)
 -- "0x123def"
---
-fromHex :: (Integral a, FiniteBits a) => a → Builder
+fromHex ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromHex x = Builder $ \b → b |>& x
 {-# INLINE fromHex #-}
 
@@ -133,7 +125,6 @@ fromHex x = Builder $ \b → b |>& x
 -- >>> :set -XMagicHash
 -- >>> fromAddr "pi="# <> fromDouble pi
 -- "pi=3.141592653589793"
---
-fromDouble :: Double → Builder
+fromDouble ∷ Double → Builder
 fromDouble x = Builder $ \b → b |>% x
 {-# INLINE fromDouble #-}
