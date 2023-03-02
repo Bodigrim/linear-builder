@@ -59,10 +59,11 @@ import GHC.ST (ST(..), runST)
 --
 #if MIN_VERSION_base(4,16,0)
 data Buffer ∷ TYPE ('BoxedRep 'Unlifted) where
+  Buffer ∷ {-# UNPACK #-} !Text → Buffer
 #else
 data Buffer where
-#endif
   Buffer ∷ {-# UNPACK #-} !Text → Buffer
+#endif
 
 -- | Unwrap 'Buffer', no-op.
 -- Most likely, this is not the function you're looking for

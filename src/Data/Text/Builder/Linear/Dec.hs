@@ -120,10 +120,12 @@ quotRem100 a = let q = quot100 a in (q, a - 100 * q)
 
 quot100 :: (Integral a, FiniteBits a) => a → a
 quot100 a = case (finiteBitSize a, isSigned a) of
-#if WORD_SIZE_IN_BITS == 64
-  (64, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int64))
-  (64, False) → cast $$(quoteQuot (100 :: Word64))
-#endif
+  (64, True)
+    | finiteBitSize (0 :: Int) == 64
+    → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int))
+  (64, False)
+    | finiteBitSize (0 :: Word) == 64
+    → cast $$(quoteQuot (100 :: Word))
   (32, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int32))
   (32, False) → cast $$(quoteQuot (100 :: Word32))
   (16, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (100 :: Int16))
@@ -141,10 +143,12 @@ quotBillion :: (Integral a, FiniteBits a) => a → a
 quotBillion a = a `quot` 1e9
 #else
 quotBillion a = case (finiteBitSize a, isSigned a) of
-#if WORD_SIZE_IN_BITS == 64
-  (64, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int64))
-  (64, False) → cast $$(quoteQuot (1e9 :: Word64))
-#endif
+  (64, True)
+    | finiteBitSize (0 :: Int) == 64
+    → cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int))
+  (64, False)
+    | finiteBitSize (0 :: Word) == 64
+    → cast $$(quoteQuot (1e9 :: Word))
   (32, True)  → cast $$(quoteAST $ assumeNonNegArg $ astQuot (1e9 :: Int32))
   (32, False) → cast $$(quoteQuot (1e9 :: Word32))
   _ → a `quot` 1e9
