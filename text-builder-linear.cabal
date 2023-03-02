@@ -1,93 +1,104 @@
 cabal-version:      2.4
 name:               text-builder-linear
 version:            0.1
-license: BSD-3-Clause
-license-file: LICENSE
-copyright: 2022 Andrew Lelechenko
-author: Andrew Lelechenko
-maintainer: Andrew Lelechenko <andrew.lelechenko@gmail.com>
-homepage: https://github.com/Bodigrim/linear-builder
-category: Text
-synopsis: Builder for Text based on linear types
+license:            BSD-3-Clause
+license-file:       LICENSE
+copyright:          2022 Andrew Lelechenko
+maintainer:         Andrew Lelechenko <andrew.lelechenko@gmail.com>
+author:             Andrew Lelechenko
+tested-with:        ghc ==9.0.2 ghc ==9.2.5 ghc ==9.4.4 ghc ==9.6.1
+homepage:           https://github.com/Bodigrim/linear-builder
+synopsis:           Builder for Text based on linear types
 description:
-  Strict Text builder, which hides mutable buffer behind linear types
-  and takes amortized linear time.
-extra-source-files: changelog.md README.md
-tested-with: GHC == 9.0.2, GHC == 9.2.5, GHC == 9.4.4, GHC == 9.6.1
+    Strict Text builder, which hides mutable buffer behind linear types
+    and takes amortized linear time.
+
+category:           Text
+extra-source-files:
+    changelog.md
+    README.md
 
 source-repository head
-  type: git
-  location: git://github.com/Bodigrim/linear-builder.git
-
-common stanza
-  build-depends:    base >= 4.15 && < 5, text >= 2.0
-  default-language: Haskell2010
-  ghc-options: -Wall
-  default-extensions:
-    BangPatterns
-    CPP
-    DeriveGeneric
-    GADTs
-    KindSignatures
-    LambdaCase
-    LinearTypes
-    MagicHash
-    NumDecimals
-    RankNTypes
-    ScopedTypeVariables
-    UnboxedTuples
-    UnicodeSyntax
-    ViewPatterns
-  if impl(ghc >= 9.2)
-    default-extensions:
-      UnliftedDatatypes
+    type:     git
+    location: git://github.com/Bodigrim/linear-builder.git
 
 library
-  import: stanza
-  build-depends: bytestring >= 0.10.12, quote-quot >= 0.2.1
-  hs-source-dirs:   src
-  ghc-options: -O2 -fexpose-all-unfoldings
-  exposed-modules:
-    Data.Text.Builder.Linear
-    Data.Text.Builder.Linear.Buffer
-    Data.Text.Builder.Linear.Core
-  other-modules:
-    Data.Text.Builder.Linear.Char
-    Data.Text.Builder.Linear.Dec
-    Data.Text.Builder.Linear.Double
-    Data.Text.Builder.Linear.Hex
+    exposed-modules:
+        Data.Text.Builder.Linear
+        Data.Text.Builder.Linear.Buffer
+        Data.Text.Builder.Linear.Core
+
+    hs-source-dirs:     src
+    other-modules:
+        Data.Text.Builder.Linear.Char
+        Data.Text.Builder.Linear.Dec
+        Data.Text.Builder.Linear.Double
+        Data.Text.Builder.Linear.Hex
+
+    default-language:   Haskell2010
+    default-extensions:
+        BangPatterns CPP DeriveGeneric GADTs KindSignatures LambdaCase
+        LinearTypes MagicHash NumDecimals RankNTypes ScopedTypeVariables
+        UnboxedTuples UnicodeSyntax ViewPatterns
+
+    ghc-options:        -Wall -O2 -fexpose-all-unfoldings
+    build-depends:
+        base >=4.15 && <5,
+        text >=2.0,
+        bytestring >=0.10.12,
+        quote-quot >=0.2.1
+
+    if impl(ghc >=9.2)
+        default-extensions: UnliftedDatatypes
 
 test-suite linear-builder-tests
-  import: stanza
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  build-depends:
-    text-builder-linear,
-    tasty,
-    tasty-quickcheck
-  hs-source-dirs: test
-  ghc-options: -Wno-orphans -threaded -rtsopts "-with-rtsopts -N"
-  default-extensions:
-    DerivingStrategies,
-    GeneralizedNewtypeDeriving,
-    PatternSynonyms
+    type:               exitcode-stdio-1.0
+    main-is:            Main.hs
+    hs-source-dirs:     test
+    default-language:   Haskell2010
+    default-extensions:
+        BangPatterns CPP DeriveGeneric GADTs KindSignatures LambdaCase
+        LinearTypes MagicHash NumDecimals RankNTypes ScopedTypeVariables
+        UnboxedTuples UnicodeSyntax ViewPatterns DerivingStrategies
+        GeneralizedNewtypeDeriving PatternSynonyms
+
+    ghc-options:
+        -Wall -Wno-orphans -threaded -rtsopts "-with-rtsopts -N"
+
+    build-depends:
+        base >=4.15 && <5,
+        text >=2.0,
+        text-builder-linear,
+        tasty,
+        tasty-quickcheck
+
+    if impl(ghc >=9.2)
+        default-extensions: UnliftedDatatypes
 
 benchmark linear-builder-bench
-  import: stanza
-  type: exitcode-stdio-1.0
-  main-is: Main.hs
-  other-modules:
-    BenchChar
-    BenchDecimal
-    BenchDouble
-    BenchHexadecimal
-    BenchText
-  hs-source-dirs: bench
-  ghc-options: -rtsopts
-  build-depends:
-    text-builder-linear,
-    -- text-builder,
-    tasty >= 1.4.2,
-    tasty-bench >= 0.3.2
-  default-language: Haskell2010
-  ghc-options: -O2 -fproc-alignment=64
+    type:               exitcode-stdio-1.0
+    main-is:            Main.hs
+    hs-source-dirs:     bench
+    other-modules:
+        BenchChar
+        BenchDecimal
+        BenchDouble
+        BenchHexadecimal
+        BenchText
+
+    default-language:   Haskell2010
+    default-extensions:
+        BangPatterns CPP DeriveGeneric GADTs KindSignatures LambdaCase
+        LinearTypes MagicHash NumDecimals RankNTypes ScopedTypeVariables
+        UnboxedTuples UnicodeSyntax ViewPatterns
+
+    ghc-options:        -Wall -rtsopts -O2 -fproc-alignment=64
+    build-depends:
+        base >=4.15 && <5,
+        text >=2.0,
+        text-builder-linear,
+        tasty >=1.4.2,
+        tasty-bench >=0.3.2
+
+    if impl(ghc >=9.2)
+        default-extensions: UnliftedDatatypes
