@@ -28,10 +28,7 @@ import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
-import GHC.Exts (unsafeCoerce#, Int(..), sizeofByteArray#, isTrue#, isByteArrayPinned#, byteArrayContents#)
-#if MIN_VERSION_base(4,16,0)
-import GHC.Exts (TYPE, Levity(..), RuntimeRep(..))
-#endif
+import GHC.Exts (Int (..), byteArrayContents#, isByteArrayPinned#, isTrue#, sizeofByteArray#, unsafeCoerce#, TYPE, Levity(..), RuntimeRep(..), plusAddr#)
 import GHC.ForeignPtr (ForeignPtr(..), ForeignPtrContents(..))
 import GHC.ST (ST(..), runST)
 
@@ -56,14 +53,8 @@ import GHC.ST (ST(..), runST)
 -- Starting from GHC 9.2, 'Buffer' is an unlifted datatype,
 -- so you can put it into an unboxed tuple @(# ..., ... #)@,
 -- but not into @(..., ...)@.
---
-#if MIN_VERSION_base(4,16,0)
 data Buffer ∷ TYPE ('BoxedRep 'Unlifted) where
   Buffer ∷ {-# UNPACK #-} !Text → Buffer
-#else
-data Buffer where
-  Buffer ∷ {-# UNPACK #-} !Text → Buffer
-#endif
 
 -- | Unwrap 'Buffer', no-op.
 -- Most likely, this is not the function you're looking for
@@ -90,9 +81,9 @@ runBuffer f = unBuffer (f (Buffer mempty))
 -- | Same as 'runBuffer', but returning a UTF-8 encoded 'ByteString'.
 runBufferBS ∷ (Buffer ⊸ Buffer) ⊸ ByteString
 runBufferBS f = case f (Buffer memptyPinned) of
-  Buffer (Text (ByteArray arr) from len) -> PS fp from len
+  Buffer (Text (ByteArray arr) (I# from) len) → BS fp len
     where
-      addr# = byteArrayContents# arr
+      addr# = byteArrayContents# arr `plusAddr#` from
       fp = ForeignPtr addr# (PlainPtr (unsafeCoerce# arr))
 
 memptyPinned :: Text

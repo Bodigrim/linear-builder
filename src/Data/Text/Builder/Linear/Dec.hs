@@ -1,9 +1,10 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
-
-{-# LANGUAGE TemplateHaskell #-}
 #ifdef aarch64_HOST_ARCH
 {-# OPTIONS_GHC -Wno-unused-imports -Wno-unused-top-binds #-}
 #endif

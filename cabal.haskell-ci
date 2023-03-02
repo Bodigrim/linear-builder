@@ -1,3 +1,0 @@
-installed: +all -text
-docspec: True
-docspec-options: --timeout 2

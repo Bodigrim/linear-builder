@@ -6,7 +6,7 @@ license-file:       LICENSE
 copyright:          2022 Andrew Lelechenko
 maintainer:         Andrew Lelechenko <andrew.lelechenko@gmail.com>
 author:             Andrew Lelechenko
-tested-with:        ghc ==9.0.2 ghc ==9.2.5 ghc ==9.4.4 ghc ==9.6.1
+tested-with:        ghc ==9.2.7 ghc ==9.4.4 ghc ==9.6.1
 homepage:           https://github.com/Bodigrim/linear-builder
 synopsis:           Builder for Text based on linear types
 description:
@@ -37,15 +37,15 @@ library
 
     default-language:   Haskell2010
     default-extensions:
-        BangPatterns CPP DeriveGeneric GADTs KindSignatures LambdaCase
+        BangPatterns DeriveGeneric GADTs KindSignatures LambdaCase
         LinearTypes MagicHash NumDecimals RankNTypes ScopedTypeVariables
         UnboxedTuples UnicodeSyntax ViewPatterns
 
     ghc-options:        -Wall -O2 -fexpose-all-unfoldings
     build-depends:
-        base >=4.15 && <5,
+        base >=4.16 && <5,
         text >=2.0,
-        bytestring >=0.10.12,
+        bytestring >=0.11,
         quote-quot >=0.2.1
 
     if impl(ghc >=9.2)
@@ -57,7 +57,7 @@ test-suite linear-builder-tests
     hs-source-dirs:     test
     default-language:   Haskell2010
     default-extensions:
-        BangPatterns CPP DeriveGeneric GADTs KindSignatures LambdaCase
+        BangPatterns DeriveGeneric GADTs KindSignatures LambdaCase
         LinearTypes MagicHash NumDecimals RankNTypes ScopedTypeVariables
         UnboxedTuples UnicodeSyntax ViewPatterns DerivingStrategies
         GeneralizedNewtypeDeriving PatternSynonyms
