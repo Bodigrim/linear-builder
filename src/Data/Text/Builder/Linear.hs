@@ -11,6 +11,7 @@
 module Data.Text.Builder.Linear
   ( Builder(..)
   , runBuilder
+  , runBuilderBS
   , fromText
   , fromChar
   , fromAddr
@@ -20,6 +21,7 @@ module Data.Text.Builder.Linear
   ) where
 
 import Data.Bits (FiniteBits)
+import Data.ByteString.Internal (ByteString(..))
 import Data.Text.Internal (Text(..))
 import GHC.Exts (IsString(..), Addr#)
 
@@ -52,6 +54,11 @@ newtype Builder = Builder { unBuilder :: Buffer ⊸ Buffer }
 runBuilder :: forall m. Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
+
+-- | Same as 'runBuilder', but returning a UTF-8 encoded 'ByteString'.
+runBuilderBS ∷ ∀ m. Builder %m → ByteString
+runBuilderBS (Builder f) = runBufferBS f
+{-# INLINE runBuilderBS #-}
 
 instance Show Builder where
   show (Builder f) = show (runBuffer f)

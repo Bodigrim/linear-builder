@@ -8,6 +8,7 @@
 module Data.Text.Builder.Linear.Buffer
   ( Buffer
   , runBuffer
+  , runBufferBS
   , dupBuffer
   , consumeBuffer
   , eraseBuffer

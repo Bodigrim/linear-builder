@@ -8,6 +8,7 @@
 module Data.Text.Builder.Linear.Core
   ( Buffer
   , runBuffer
+  , runBufferBS
   , dupBuffer
   , consumeBuffer
   , eraseBuffer
@@ -22,14 +23,16 @@ module Data.Text.Builder.Linear.Core
   , (><)
   ) where
 
+import Data.ByteString.Internal (ByteString(..))
 import qualified Data.Text as T
 import Data.Text.Array (Array(..), MArray(..))
 import qualified Data.Text.Array as A
 import Data.Text.Internal (Text(..))
-import GHC.Exts (unsafeCoerce#, Int(..), sizeofByteArray#)
+import GHC.Exts (unsafeCoerce#, Int(..), sizeofByteArray#, isTrue#, isByteArrayPinned#, byteArrayContents#)
 #if MIN_VERSION_base(4,16,0)
 import GHC.Exts (TYPE, Levity(..), RuntimeRep(..))
 #endif
+import GHC.ForeignPtr (ForeignPtr(..), ForeignPtrContents(..))
 import GHC.ST (ST(..), runST)
 
 -- | Internally 'Buffer' is a mutable buffer.
@@ -82,6 +85,20 @@ unBuffer (Buffer x) = x
 --
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (f (Buffer mempty))
+
+-- | Same as 'runBuffer', but returning a UTF-8 encoded 'ByteString'.
+runBufferBS ∷ (Buffer ⊸ Buffer) ⊸ ByteString
+runBufferBS f = case f (Buffer memptyPinned) of
+  Buffer (Text (ByteArray arr) from len) -> PS fp from len
+    where
+      addr# = byteArrayContents# arr
+      fp = ForeignPtr addr# (PlainPtr (unsafeCoerce# arr))
+
+memptyPinned :: Text
+memptyPinned = runST $ do
+  marr <- A.newPinned 0
+  arr <- A.unsafeFreeze marr
+  pure $ Text arr 0 0
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
 -- Similar to @Data.Unrestricted.Linear.Dupable@ from @linear-base@.
@@ -164,7 +181,7 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
   newM ← if dstOff + dstLen + maxSrcLen <= dstFullLen
     then unsafeThaw dst
     else do
-      tmpM ← A.new newFullLen
+      tmpM ← (if isPinned dst then A.newPinned else A.new) newFullLen
       A.copyI dstLen tmpM dstOff dst dstOff
       pure tmpM
   srcLen ← appender newM (dstOff + dstLen)
@@ -207,7 +224,7 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
     let dstFullLen = sizeofByteArray dst
         newOff = dstLen + maxSrcLen
         newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
-    newM ← A.new newFullLen
+    newM ← (if isPinned dst then A.newPinned else A.new) newFullLen
     srcLen ← appender newM newOff
     A.copyI dstLen newM (newOff + srcLen) dst dstOff
     new ← A.unsafeFreeze newM
@@ -234,6 +251,9 @@ unsafeThaw (ByteArray a) = ST $ \s# →
 
 sizeofByteArray ∷ Array → Int
 sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
+
+isPinned :: Array -> Bool
+isPinned (ByteArray a) = isTrue# (isByteArrayPinned# a)
 
 -- | Concatenate two 'Buffer's, potentially mutating both of them.
 --
@@ -264,7 +284,7 @@ Buffer (Text left leftOff leftLen) >< Buffer (Text right rightOff rightLen) = Bu
     pure $ Text new (rightOff - leftLen) (leftLen + rightLen)
   else do
     let fullLen = leftOff + leftLen + rightLen + (rightFullLen - rightOff - rightLen)
-    newM ← A.new fullLen
+    newM ← (if isPinned left || isPinned right then A.newPinned else A.new) fullLen
     A.copyI leftLen newM leftOff left leftOff
     A.copyI rightLen newM (leftOff + leftLen) right rightOff
     new ← A.unsafeFreeze newM

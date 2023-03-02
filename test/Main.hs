@@ -8,6 +8,7 @@ module Main where
 import Data.Bits (Bits(..), FiniteBits(..))
 import Data.Foldable
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import Data.Text.Builder.Linear.Buffer
 import Data.Text.Internal (Text(..))
 import Data.Text.Lazy (toStrict)
@@ -116,6 +117,7 @@ main = defaultMain $ testGroup "All"
   , testProperty "two sequences of actions" prop2
   , testProperty "append addr#" prop3
   , testProperty "prepend addr#" prop4
+  , testProperty "bytestring builder" prop5
   ]
 
 prop1 ∷ [Action] → Property
@@ -144,6 +146,10 @@ prop4 acts = runBuffer f1 === runBuffer f2
     f1, f2 :: Buffer ⊸ Buffer
     f1 = \b → addr# <|# interpretOnBuffer acts b
     f2 = \b → T.pack "foo" <| interpretOnBuffer acts b
+
+prop5 ∷ [Action] → Property
+prop5 acts = T.encodeUtf8 (interpretOnText acts mempty) ===
+  runBufferBS (\b → interpretOnBuffer acts b)
 
 -------------------------------------------------------------------------------
 
