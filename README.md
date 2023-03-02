@@ -52,6 +52,90 @@ but may suffer from insufficient inlining, allocating a tree of thunks. It is st
 significantly faster than `Data.Text.Lazy.Builder`, as witnessed by benchmarks
 for `blaze-builder` below.
 
+## Case study
+
+Let's benchmark builders, which concatenate all `Char` from `minBound` to `maxBound`, producing a large `Text`:
+
+```haskell
+#!/usr/bin/env cabal
+{- cabal:
+build-depends: base, tasty-bench, text, text-builder, text-builder-linear
+ghc-options: -O2
+-}
+
+import qualified Data.Text as T
+import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TLB
+import qualified Text.Builder as TB
+import qualified Data.Text.Builder.Linear as TBL
+import System.Environment (getArgs)
+import Test.Tasty.Bench
+
+mkBench :: Monoid a => String -> (Char -> a) -> (a -> Int) -> Benchmark
+mkBench s f g = bench s $ nf (g . foldMap f . enumFromTo minBound) maxBound
+{-# INLINE mkBench #-}
+
+main :: IO ()
+main = defaultMain
+  [ mkBench "text, lazy" TLB.singleton (fromIntegral . TL.length . TLB.toLazyText)
+  , mkBench "text, strict" TLB.singleton (T.length . TL.toStrict . TLB.toLazyText)
+  , mkBench "text-builder" TB.char (T.length . TB.run)
+  , mkBench "text-builder-linear" TBL.fromChar (T.length . TBL.runBuilder)
+  ]
+```
+
+Running this program with `cabal run Main.hs -- +RTS -T` yields following results:
+
+```
+text, lazy:
+  4.25 ms ± 107 μs,  11 MB allocated, 912 B  copied
+text, strict:
+  7.18 ms ± 235 μs,  24 MB allocated,  10 MB copied
+text-builder:
+  80.1 ms ± 3.0 ms, 218 MB allocated, 107 MB copied
+text-builder-linear:
+  5.37 ms ± 146 μs,  44 MB allocated,  78 KB copied
+```
+
+The first result seems the best both in time and memory and corresponds to the
+usual `Text` builder, where we do not materialize the entire result at all.
+It builds chunks of lazy `Text` lazily and consumes them at once by
+`TL.length`. Thus there are 11 MB of allocations in nursery, none of which
+survive generation 0 garbage collector, so nothing is copied.
+
+The second result is again the usual `Text` builder, but emulates a strict
+consumer: we materialize a strict `Text` before computing length. Allocation
+are doubled, and half of them (corresponding to the strict `Text`) survive to
+the heap. Time is also almost twice longer, but still quite good.
+
+The third result is for `text-builder` and demonstrates how bad things could
+go with strict builders, aiming to precompute the precise length of the
+buffer: allocating a thunk per char is tremendously slow and expensive.
+
+The last result corresponds to the current package. We generate a strict
+`Text` by growing and reallocating the buffer, thus allocations are quite
+high. Nevertheless, it is already faster than the usual `Text` builder with
+strict consumer and does strain the garbage collector.
+
+Things get very different if we remove `{-# INLINE mkBench #-}`:
+
+```
+text, lazy:
+  36.9 ms ± 599 μs, 275 MB allocated,  30 KB copied
+text, strict:
+  44.7 ms ± 1.3 ms, 287 MB allocated,  25 MB copied
+text-builder:
+  77.6 ms ± 2.2 ms, 218 MB allocated, 107 MB copied
+text-builder-linear:
+  5.35 ms ± 212 μs,  44 MB allocated,  79 KB copied
+```
+
+Builders from `text` package degrade rapidly, 6-8x slower and 10-20x more
+allocations. That's because their constant factors rely crucially on
+everything getting inlined, which makes their performance fragile and
+unreliable in large-scale applications. On the bright side of things, our
+builder remains as fast as before and now is a clear champion.
+
 ## Benchmarks
 
 |Group / size|`text`|`text-builder`|Ratio|This package|Ratio|
