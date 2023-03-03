@@ -95,6 +95,7 @@ benchmark linear-builder-bench
     ghc-options:        -Wall -rtsopts -O2 -fproc-alignment=64
     build-depends:
         base >=4.15 && <5,
+        bytestring,
         text >=2.0,
         text-builder-linear,
         tasty >=1.4.2,

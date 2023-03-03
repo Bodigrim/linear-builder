@@ -5,6 +5,8 @@
 
 module BenchChar (benchChar) where
 
+import qualified Data.ByteString as B
+import qualified Data.ByteString.Builder as B
 import Data.Char
 import qualified Data.Text as T
 import Data.Text.Builder.Linear.Buffer
@@ -21,6 +23,12 @@ benchLazyBuilder = toStrict . toLazyText . go mempty
   where
     go !acc 0 = acc
     go !acc n = let ch = chr n in go (singleton ch <> (acc <> singleton ch)) (n - 1)
+
+benchLazyBuilderBS ∷ Int → B.ByteString
+benchLazyBuilderBS = B.toStrict . B.toLazyByteString . go mempty
+  where
+    go !acc 0 = acc
+    go !acc n = let ch = chr n in go (B.charUtf8 ch <> (acc <> B.charUtf8 ch)) (n - 1)
 
 #ifdef MIN_VERSION_text_builder
 benchStrictBuilder ∷ Int → T.Text
@@ -43,6 +51,7 @@ benchChar = bgroup "Char" $ map mkGroup [1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6]
 mkGroup :: Int → Benchmark
 mkGroup n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchLazyBuilder n
+  , bench "Data.ByteString.Builder" $ nf benchLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
   , bench "Text.Builder" $ nf benchStrictBuilder n
 #endif

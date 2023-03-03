@@ -30,7 +30,7 @@ mkHeader :: String -> String
 mkHeader xs = "| **" ++ xs ++ "** ||||||"
 
 mkTriples :: [a] -> [(a, a, a)]
-mkTriples (x : y : z : ts) = (x, y, z) : mkTriples ts
+mkTriples (x : _ : y : z : ts) = (x, y, z) : mkTriples ts
 mkTriples _ = []
 
 parseCells :: String -> (String, Word64)
