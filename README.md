@@ -115,7 +115,7 @@ buffer: allocating a thunk per char is tremendously slow and expensive.
 The last result corresponds to the current package. We generate a strict
 `Text` by growing and reallocating the buffer, thus allocations are quite
 high. Nevertheless, it is already faster than the usual `Text` builder with
-strict consumer and does strain the garbage collector.
+strict consumer and does not strain the garbage collector.
 
 Things get very different if we remove `{-# INLINE mkBench #-}`:
 
