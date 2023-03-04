@@ -18,7 +18,7 @@ module Data.Text.Builder.Linear.Dec (
 
 import Data.Bits (Bits (..), FiniteBits (..))
 import Data.Int (Int16, Int32, Int64, Int8)
-import qualified Data.Text.Array as A
+import Data.Text.Array qualified as A
 import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Exts (Addr#, Int (..), Ptr (..), dataToTag#, (>=#))
 import GHC.Ptr (plusPtr)
@@ -78,7 +78,7 @@ unsafeAppendDec ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → 
 unsafeAppendDec marr off n = unsafePrependDec marr (off + exactDecLen n) n
 {-# INLINEABLE unsafeAppendDec #-}
 
-unsafePrependDec ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
+unsafePrependDec ∷ ∀ s a. (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
 unsafePrependDec marr !off n
   | n < 0
   , n == bit (finiteBitSize n - 1) = do
@@ -94,6 +94,7 @@ unsafePrependDec marr !off n
           A.unsafeWrite marr (o - 1) 0x2d -- '-'
           pure (off - o + 1)
 
+    go ∷ Int → a → ST s Int
     go o k
       | k >= 10 = do
           let (q, r) = quotRem100 k

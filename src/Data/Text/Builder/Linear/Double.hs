@@ -7,9 +7,9 @@ module Data.Text.Builder.Linear.Double (
   (%<|),
 ) where
 
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Builder.Internal as BBI
-import qualified Data.Text.Array as A
+import Data.ByteString.Builder qualified as BB
+import Data.ByteString.Builder.Internal qualified as BBI
+import Data.Text.Array qualified as A
 import Data.Word (Word8)
 import GHC.Exts (Ptr (..))
 import GHC.ForeignPtr (ForeignPtr, touchForeignPtr, unsafeForeignPtrToPtr, unsafeWithForeignPtr)

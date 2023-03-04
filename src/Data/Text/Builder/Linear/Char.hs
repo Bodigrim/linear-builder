@@ -8,7 +8,7 @@ module Data.Text.Builder.Linear.Char (
   (.<|),
 ) where
 
-import qualified Data.Text.Array as A
+import Data.Text.Array qualified as A
 import Data.Text.Internal.Encoding.Utf8 (ord2, ord3, ord4, utf8Length)
 import Data.Text.Internal.Unsafe.Char (ord, unsafeWrite)
 import GHC.ST (ST)

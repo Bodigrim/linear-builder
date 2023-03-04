@@ -29,7 +29,7 @@ module Data.Text.Builder.Linear.Buffer (
   (…<|),
 ) where
 
-import qualified Data.Text.Array as A
+import Data.Text.Array qualified as A
 import Data.Text.Internal (Text (..))
 import GHC.Exts (Addr#, Int (..), Ptr (..), cstringLength#, setByteArray#)
 import GHC.ST (ST (..))
@@ -144,8 +144,9 @@ infixr 6 …<|
 
 -- | This is just a normal 'Data.List.foldl'', but with a linear arrow
 -- and potentially unlifted accumulator.
-foldlIntoBuffer ∷ (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
+foldlIntoBuffer ∷ ∀ a. (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
 foldlIntoBuffer f = go
   where
+    go ∷ Buffer ⊸ [a] → Buffer
     go !acc [] = acc
     go !acc (x : xs) = go (f acc x) xs

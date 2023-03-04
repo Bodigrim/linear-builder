@@ -23,9 +23,9 @@ module Data.Text.Builder.Linear.Core (
 ) where
 
 import Data.ByteString.Internal (ByteString (..))
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Data.Text.Array (Array (..), MArray (..))
-import qualified Data.Text.Array as A
+import Data.Text.Array qualified as A
 import Data.Text.Internal (Text (..))
 import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, isByteArrayPinned#, isTrue#, plusAddr#, sizeofByteArray#, unsafeCoerce#)
 import GHC.ForeignPtr (ForeignPtr (..), ForeignPtrContents (..))

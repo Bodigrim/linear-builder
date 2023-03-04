@@ -9,7 +9,7 @@ module Data.Text.Builder.Linear.Hex (
 
 import Data.Bits (Bits (..), FiniteBits (..))
 import Data.Foldable (forM_)
-import qualified Data.Text.Array as A
+import Data.Text.Array qualified as A
 import GHC.Exts (Int (..), (<=#), (>#))
 import GHC.ST (ST)
 
