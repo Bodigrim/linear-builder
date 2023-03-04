@@ -8,9 +8,8 @@ module Data.Text.Builder.Linear.Hex (
 ) where
 
 import Data.Bits (Bits (..), FiniteBits (..))
-import Data.Foldable (forM_)
 import Data.Text.Array qualified as A
-import GHC.Exts (Int (..), (<=#), (>#))
+import GHC.Exts (Int (..), (>#))
 import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
@@ -39,32 +38,37 @@ n &<| buffer =
 {-# INLINEABLE (&<|) #-}
 
 unsafeAppendHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
-unsafeAppendHex marr !off n = do
-  let len = lengthAsHex n
-  forM_ [0 .. len - 1] $ \i →
-    let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf
-     in writeNibbleAsHex marr (off + i) (fromIntegral nibble)
-  pure len
+unsafeAppendHex marr !off 0 =
+  A.unsafeWrite marr off 0x30 >> pure 1
+unsafeAppendHex marr !off n = go (off + len - 1) n
+  where
+    len = lengthAsHex n
+
+    go !_ 0 = pure len
+    go !o m = do
+      let nibble = m .&. 0x0f
+      writeNibbleAsHex marr o (fromIntegral nibble)
+      go (o - 1) (m `shiftR` 4)
 {-# INLINEABLE unsafeAppendHex #-}
 
 unsafePrependHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
-unsafePrependHex marr !off n = do
-  let len = lengthAsHex n
-  forM_ [0 .. len - 1] $ \i →
-    let nibble = (n `shiftR` (i `shiftL` 2)) .&. 0xf
-     in writeNibbleAsHex marr (off - 1 - i) (fromIntegral nibble)
-  pure len
+unsafePrependHex marr !off 0 =
+  A.unsafeWrite marr (off - 1) 0x30 >> pure 1
+unsafePrependHex marr !off n = go (off - 1) n
+  where
+    go !o 0 = pure (off - 1 - o)
+    go !o m = do
+      let nibble = m .&. 0x0f
+      writeNibbleAsHex marr o (fromIntegral nibble)
+      go (o - 1) (m `shiftR` 4)
 {-# INLINEABLE unsafePrependHex #-}
 
+-- | This assumes n /= 0.
 lengthAsHex ∷ FiniteBits a ⇒ a → Int
-lengthAsHex n = max1 $ (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
+lengthAsHex n = (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
 {-# INLINEABLE lengthAsHex #-}
-
--- Branchless equivalent for max 1 n.
-max1 ∷ Int → Int
-max1 n@(I# n#) = n `xor` I# (n# <=# 0#)
 
 writeNibbleAsHex ∷ A.MArray s → Int → Int → ST s ()
 writeNibbleAsHex marr off n@(I# n#) = A.unsafeWrite marr off (fromIntegral hex)
   where
-    hex = 48 + n + I# (n# ># 9#) * 39
+    hex = 0x30 + n + I# (n# ># 9#) * (0x60 - 0x39)
