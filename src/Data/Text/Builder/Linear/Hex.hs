@@ -39,7 +39,7 @@ n &<| buffer =
 {-# INLINEABLE (&<|) #-}
 
 unsafeAppendHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
-unsafeAppendHex marr off n = do
+unsafeAppendHex marr !off n = do
   let len = lengthAsHex n
   forM_ [0 .. len - 1] $ \i →
     let nibble = (n `shiftR` ((len - 1 - i) `shiftL` 2)) .&. 0xf
@@ -48,7 +48,7 @@ unsafeAppendHex marr off n = do
 {-# INLINEABLE unsafeAppendHex #-}
 
 unsafePrependHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
-unsafePrependHex marr off n = do
+unsafePrependHex marr !off n = do
   let len = lengthAsHex n
   forM_ [0 .. len - 1] $ \i →
     let nibble = (n `shiftR` (i `shiftL` 2)) .&. 0xf
