@@ -18,6 +18,10 @@ import Test.Tasty.Bench
 import qualified Text.Builder
 #endif
 
+#ifdef MIN_VERSION_bytestring_strict_builder
+import qualified ByteString.StrictBuilder
+#endif
+
 benchLazyBuilder ∷ Int → T.Text
 benchLazyBuilder = toStrict . toLazyText . go mempty
   where
@@ -38,6 +42,14 @@ benchStrictBuilder = Text.Builder.run . go mempty
     go !acc n = let ch = chr n in go (Text.Builder.char ch <> (acc <> Text.Builder.char ch)) (n - 1)
 #endif
 
+#ifdef MIN_VERSION_bytestring_strict_builder
+benchStrictBuilderBS ∷ Int → B.ByteString
+benchStrictBuilderBS = ByteString.StrictBuilder.builderBytes . go mempty
+  where
+    go !acc 0 = acc
+    go !acc n = let ch = chr n in go (ByteString.StrictBuilder.utf8Char ch <> (acc <> ByteString.StrictBuilder.utf8Char ch)) (n - 1)
+#endif
+
 benchLinearBuilder ∷ Int → T.Text
 benchLinearBuilder m = runBuffer (\b → go b m)
   where
@@ -54,6 +66,9 @@ mkGroup n = bgroup (show n)
   , bench "Data.ByteString.Builder" $ nf benchLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
   , bench "Text.Builder" $ nf benchStrictBuilder n
+#endif
+#ifdef MIN_VERSION_bytestring_strict_builder
+  , bench "ByteString.StrictBuilder" $ nf benchStrictBuilderBS n
 #endif
   , bench "Data.Text.Builder.Linear" $ nf benchLinearBuilder n
   ]
