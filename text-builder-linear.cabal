@@ -1,20 +1,20 @@
-cabal-version:      2.4
-name:               text-builder-linear
-version:            0.1
-license:            BSD-3-Clause
-license-file:       LICENSE
-copyright:          2022 Andrew Lelechenko
-maintainer:         Andrew Lelechenko <andrew.lelechenko@gmail.com>
-author:             Andrew Lelechenko
-tested-with:        ghc ==9.2.7 ghc ==9.4.4 ghc ==9.6.1
-homepage:           https://github.com/Bodigrim/linear-builder
-synopsis:           Builder for Text based on linear types
+cabal-version:   2.4
+name:            text-builder-linear
+version:         0.1
+license:         BSD-3-Clause
+license-file:    LICENSE
+copyright:       2022 Andrew Lelechenko
+maintainer:      Andrew Lelechenko <andrew.lelechenko@gmail.com>
+author:          Andrew Lelechenko
+tested-with:     ghc ==9.2.7 ghc ==9.4.4 ghc ==9.6.1
+homepage:        https://github.com/Bodigrim/linear-builder
+synopsis:        Builder for Text based on linear types
 description:
     Strict Text builder, which hides mutable buffer behind linear types
     and takes amortized linear time.
 
-category:           Text
-extra-source-files:
+category:        Text
+extra-doc-files:
     changelog.md
     README.md
 
@@ -43,9 +43,9 @@ library
     ghc-options:        -Wall -O2 -fexpose-all-unfoldings
     build-depends:
         base >=4.16 && <5,
-        text >=2.0,
-        bytestring >=0.11,
-        quote-quot >=0.2.1
+        text >=2.0 && <2.1,
+        bytestring >=0.11 && <0.12,
+        quote-quot >=0.2.1 && <0.3
 
 test-suite linear-builder-tests
     type:               exitcode-stdio-1.0
@@ -60,11 +60,11 @@ test-suite linear-builder-tests
         -Wall -Wno-orphans -threaded -rtsopts "-with-rtsopts -N"
 
     build-depends:
-        base >=4.15 && <5,
-        text >=2.0,
+        base,
+        text,
         text-builder-linear,
-        tasty,
-        tasty-quickcheck
+        tasty >=1.4 && <1.5,
+        tasty-quickcheck >=0.10 && <0.11
 
 benchmark linear-builder-bench
     type:               exitcode-stdio-1.0
@@ -81,9 +81,9 @@ benchmark linear-builder-bench
     default-extensions: CPP LinearTypes NumDecimals UnicodeSyntax
     ghc-options:        -Wall -rtsopts -O2 -fproc-alignment=64
     build-depends:
-        base >=4.15 && <5,
+        base,
         bytestring,
-        text >=2.0,
+        text,
         text-builder-linear,
-        tasty >=1.4.2,
-        tasty-bench >=0.3.2
+        tasty,
+        tasty-bench >=0.3.2 && <0.4
