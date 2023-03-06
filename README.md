@@ -2,7 +2,7 @@
 
 _Linear types for linear times!_
 
-Builder for strict `Text`, based on linear types. It's consistently
+Builder for strict `Text` and `ByteString`, based on linear types. It consistently
 outperforms lazy `Builder` from `text` as well as a strict builder from `text-builder`,
 and scales better.
 
@@ -136,50 +136,52 @@ everything getting inlined, which makes their performance fragile and
 unreliable in large-scale applications. On the bright side of things, our
 builder remains as fast as before and now is a clear champion.
 
-## Benchmarks
+## Benchmarks for `Text`
 
-|Group / size|`text`|`text-builder`|Ratio|This package|Ratio|
+Measured with GHC 9.6 on aarch64:
+
+|Group / size|`text`|`text-builder`|  |This package|  |
 |------------|-----:|-------------:|-:|-----------:|-:|
 | **Text** ||||||
-|1|69.2 ns|37.0 ns|0.53x|36.8 ns|0.53x|
-|10|736 ns|344 ns|0.47x|190 ns|0.26x|
-|100|7.07 μs|3.42 μs|0.48x|1.81 μs|0.26x|
-|1000|74.2 μs|38.5 μs|0.52x|14.4 μs|0.19x|
-|10000|1.10 ms|477 μs|0.43x|163 μs|0.15x|
-|100000|23.1 ms|11.6 ms|0.50x|4.17 ms|0.18x|
-|1000000|282 ms|166 ms|0.59x|40.4 ms|0.14x|
+|1|47.4 ns|24.2 ns|0.51x|35.2 ns|0.74x|
+|10|509 ns|195 ns|0.38x|197 ns|0.39x|
+|100|4.94 μs|1.74 μs|0.35x|1.66 μs|0.34x|
+|1000|52.6 μs|17.0 μs|0.32x|15.0 μs|0.28x|
+|10000|646 μs|206 μs|0.32x|155 μs|0.24x|
+|100000|12.2 ms|3.34 ms|0.27x|2.60 ms|0.21x|
+|1000000|159 ms|55.3 ms|0.35x|16.1 ms|0.10x|
 | **Char** ||||||
-|1|83.2 ns|34.8 ns|0.42x|34.8 ns|0.42x|
-|10|378 ns|302 ns|0.80x|123 ns|0.33x|
-|100|3.14 μs|2.46 μs|0.78x|922 ns|0.29x|
-|1000|34.9 μs|31.3 μs|0.90x|9.37 μs|0.27x|
-|10000|494 μs|454 μs|0.92x|101 μs|0.20x|
-|100000|15.9 ms|13.8 ms|0.87x|1.64 ms|0.10x|
-|1000000|212 ms|227 ms|1.07x|14.5 ms|0.07x|
+|1|46.9 ns|21.1 ns|0.45x|22.3 ns|0.48x|
+|10|229 ns|152 ns|0.66x|79.9 ns|0.35x|
+|100|2.00 μs|1.23 μs|0.61x|618 ns|0.31x|
+|1000|21.9 μs|10.3 μs|0.47x|6.28 μs|0.29x|
+|10000|285 μs|153 μs|0.54x|68.5 μs|0.24x|
+|100000|7.70 ms|4.08 ms|0.53x|992 μs|0.13x|
+|1000000|110 ms|106 ms|0.96x|9.19 ms|0.08x|
 | **Decimal** ||||||
-|1|147 ns|993 ns|6.76x|106 ns|0.72x|
-|10|1.36 μs|10.1 μs|7.43x|845 ns|0.62x|
-|100|13.5 μs|108 μs|7.97x|8.44 μs|0.62x|
-|1000|136 μs|1.34 ms|9.84x|83.0 μs|0.61x|
-|10000|1.85 ms|22.0 ms|11.86x|822 μs|0.44x|
-|100000|33.9 ms|237 ms|7.00x|10.4 ms|0.31x|
-|1000000|399 ms|2.504 s|6.28x|89.8 ms|0.23x|
+|1|97.7 ns|872 ns|8.92x|80.2 ns|0.82x|
+|10|864 ns|8.72 μs|10.09x|684 ns|0.79x|
+|100|9.07 μs|93.5 μs|10.32x|7.25 μs|0.80x|
+|1000|92.4 μs|1.06 ms|11.44x|67.5 μs|0.73x|
+|10000|1.13 ms|13.4 ms|11.88x|667 μs|0.59x|
+|100000|18.7 ms|141 ms|7.57x|7.57 ms|0.41x|
+|1000000|229 ms|1.487 s|6.48x|67.8 ms|0.30x|
 | **Hexadecimal** ||||||
-|1|599 ns|940 ns|1.57x|98.9 ns|0.17x|
-|10|6.05 μs|9.89 μs|1.64x|916 ns|0.15x|
-|100|66.4 μs|121 μs|1.82x|9.61 μs|0.14x|
-|1000|807 μs|1.47 ms|1.82x|96.7 μs|0.12x|
-|10000|13.0 ms|20.8 ms|1.60x|980 μs|0.08x|
-|100000|152 ms|223 ms|1.47x|11.7 ms|0.08x|
-|1000000|1.657 s|2.228 s|1.34x|104 ms|0.06x|
+|1|403 ns|749 ns|1.86x|43.9 ns|0.11x|
+|10|3.94 μs|7.66 μs|1.94x|308 ns|0.08x|
+|100|42.8 μs|89.0 μs|2.08x|2.88 μs|0.07x|
+|1000|486 μs|986 μs|2.03x|27.7 μs|0.06x|
+|10000|7.10 ms|12.6 ms|1.77x|283 μs|0.04x|
+|100000|80.1 ms|133 ms|1.65x|3.53 ms|0.04x|
+|1000000|867 ms|1.340 s|1.55x|28.9 ms|0.03x|
 | **Double** ||||||
-|1|11.9 μs|26.6 μs|2.23x|632 ns|0.05x|
-|10|117 μs|270 μs|2.30x|6.32 μs|0.05x|
-|100|1.20 ms|3.68 ms|3.06x|64.5 μs|0.05x|
-|1000|12.8 ms|43.9 ms|3.44x|638 μs|0.05x|
-|10000|126 ms|457 ms|3.63x|7.38 ms|0.06x|
-|100000|1.266 s|4.717 s|3.73x|65.9 ms|0.05x|
-|1000000|12.599 s|65.467 s|5.20x|653 ms|0.05x|
+|1|7.56 μs|18.3 μs|2.42x|414 ns|0.05x|
+|10|76.5 μs|188 μs|2.46x|4.23 μs|0.06x|
+|100|754 μs|2.35 ms|3.11x|44.4 μs|0.06x|
+|1000|7.94 ms|25.8 ms|3.25x|436 μs|0.05x|
+|10000|79.1 ms|285 ms|3.60x|4.90 ms|0.06x|
+|100000|796 ms|2.938 s|3.69x|45.1 ms|0.06x|
+|1000000|8.003 s|32.411 s|4.05x|436 ms|0.05x|
 
 If you are not convinced by synthetic data,
 here are benchmarks for
@@ -201,3 +203,57 @@ manyAttributes
 customAttribute
   1.68 ms ± 135 μs, 56% less than baseline
 ```
+
+## Benchmarks for `ByteString`
+
+Somewhat surprisingly, `text-builder-linear` now offers rendering to strict `ByteString`
+as well. It is consistently faster than `bytestring` when a string gets over 32k
+(which is `defaultChunkSize` for `bytestring` builder). For mid-sized strings
+`bytestring` is slightly faster in certain disciplines, mostly by virtue of using
+`cbits` via FFI, while this package remains 100% native Haskell.
+
+Benchmarks below were measured with GHC 9.6 on aarch64 and include comparison
+to [`bytestring-strict-builder`](https://hackage.haskell.org/package/bytestring-strict-builder):
+
+|Group / size|`bytestring`|`…-strict-builder`|  |This package|  |
+|------------|-----------:|-----------------:|-:|-----------:|-:|
+| **Text** ||||||
+|1|106 ns|33.5 ns|0.32x|35.2 ns|0.33x|
+|10|322 ns|217 ns|0.68x|197 ns|0.61x|
+|100|2.49 μs|1.89 μs|0.76x|1.66 μs|0.67x|
+|1000|21.8 μs|18.5 μs|0.85x|15.0 μs|0.69x|
+|10000|231 μs|212 μs|0.92x|155 μs|0.67x|
+|100000|3.97 ms|3.54 ms|0.89x|2.60 ms|0.66x|
+|1000000|81.2 ms|51.5 ms|0.63x|16.1 ms|0.20x|
+| **Char** ||||||
+|1|99.0 ns|19.4 ns|0.20x|22.3 ns|0.23x|
+|10|270 ns|82.9 ns|0.31x|79.9 ns|0.30x|
+|100|1.77 μs|723 ns|0.41x|618 ns|0.35x|
+|1000|20.4 μs|8.37 μs|0.41x|6.28 μs|0.31x|
+|10000|322 μs|129 μs|0.40x|68.5 μs|0.21x|
+|100000|10.4 ms|2.50 ms|0.24x|992 μs|0.10x|
+|1000000|143 ms|67.4 ms|0.47x|9.19 ms|0.06x|
+| **Decimal** ||||||
+|1|152 ns|174 ns|1.14x|80.2 ns|0.53x|
+|10|685 ns|1.55 μs|2.26x|684 ns|1.00x|
+|100|5.88 μs|17.2 μs|2.93x|7.25 μs|1.23x|
+|1000|60.3 μs|196 μs|3.25x|67.5 μs|1.12x|
+|10000|648 μs|4.25 ms|6.57x|667 μs|1.03x|
+|100000|11.2 ms|62.8 ms|5.62x|7.57 ms|0.68x|
+|1000000|150 ms|655 ms|4.37x|67.8 ms|0.45x|
+| **Hexadecimal** ||||||
+|1|94.7 ns|||43.9 ns|0.46x|
+|10|255 ns|||308 ns|1.21x|
+|100|1.72 μs|||2.88 μs|1.67x|
+|1000|18.9 μs|||27.7 μs|1.46x|
+|10000|250 μs|||283 μs|1.13x|
+|100000|6.94 ms|||3.53 ms|0.51x|
+|1000000|93.2 ms|||28.9 ms|0.31x|
+| **Double** ||||||
+|1|457 ns|||414 ns|0.91x|
+|10|3.94 μs|||4.23 μs|1.07x|
+|100|40.3 μs|||44.4 μs|1.10x|
+|1000|398 μs|||436 μs|1.10x|
+|10000|5.65 ms|||4.90 ms|0.87x|
+|100000|63.3 ms|||45.1 ms|0.71x|
+|1000000|673 ms|||436 ms|0.65x|

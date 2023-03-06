@@ -77,7 +77,8 @@ Text src srcOff srcLen <| buffer =
 -- >>> runBuffer (\b -> b |># "foo"# |># "bar"#)
 -- "foobar"
 --
--- The literal string must not contain zero bytes @\\0@, this condition is not checked.
+-- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
+-- these conditions are not checked.
 --
 -- Note the inconsistency in naming: unfortunately, GHC parser does not allow for @#<|@.
 (|>#) ∷ Buffer ⊸ Addr# → Buffer
@@ -98,7 +99,8 @@ buffer |># addr# =
 -- >>> runBuffer (\b -> "foo"# <|# "bar"# <|# b)
 -- "foobar"
 --
--- The literal string must not contain zero bytes @\\0@, this condition is not checked.
+-- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
+-- these conditions are not checked.
 (<|#) ∷ Addr# → Buffer ⊸ Buffer
 
 infixr 6 <|#

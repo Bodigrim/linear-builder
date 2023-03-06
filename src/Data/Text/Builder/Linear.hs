@@ -3,7 +3,7 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
--- Builder for strict 'Text', based on linear types. It's consistently
+-- Builder for strict 'Text' and 'ByteString', based on linear types. It consistently
 -- outperforms "Data.Text.Lazy.Builder"
 -- from @text@ as well as a strict builder from @text-builder@,
 -- and scales better.
@@ -40,7 +40,7 @@ import Data.Text.Builder.Linear.Buffer
 -- but it is faster to use 'Buffer' directly.
 newtype Builder = Builder {unBuilder ∷ Buffer ⊸ Buffer}
 
--- | Run 'Builder' computation on an empty 'Buffer', returning 'Text'.
+-- | Run 'Builder' computation on an empty 'Buffer', returning strict 'Text'.
 --
 -- >>> :set -XOverloadedStrings -XMagicHash
 -- >>> runBuilder (fromText "foo" <> fromChar '_' <> fromAddr "bar"#)
@@ -52,7 +52,7 @@ runBuilder ∷ ∀ m. Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
 
--- | Same as 'runBuilder', but returning a UTF-8 encoded 'ByteString'.
+-- | Same as 'runBuilder', but returning a UTF-8 encoded strict 'ByteString'.
 runBuilderBS ∷ ∀ m. Builder %m → ByteString
 runBuilderBS (Builder f) = runBufferBS f
 {-# INLINE runBuilderBS #-}
@@ -98,12 +98,13 @@ fromChar x = Builder $ \b → b |>. x
 -- >>> fromAddr "foo"# <> fromAddr "bar"#
 -- "foobar"
 --
--- The literal string must not contain zero bytes @\\0@, this condition is not checked.
+-- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
+-- these conditions are not checked.
 fromAddr ∷ Addr# → Builder
 fromAddr x = Builder $ \b → b |># x
 {-# INLINE fromAddr #-}
 
--- | Create 'Builder', containing decimal representation of a given number.
+-- | Create 'Builder', containing decimal representation of a given integer.
 --
 -- >>> fromChar 'x' <> fromDec (123 :: Int)
 -- "x123"
@@ -111,7 +112,7 @@ fromDec ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromDec x = Builder $ \b → b |>$ x
 {-# INLINE fromDec #-}
 
--- | Create 'Builder', containing hexadecimal representation of a given number.
+-- | Create 'Builder', containing hexadecimal representation of a given integer.
 --
 -- >>> :set -XMagicHash
 -- >>> fromAddr "0x"# <> fromHex (0x123def :: Int)
@@ -120,7 +121,7 @@ fromHex ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromHex x = Builder $ \b → b |>& x
 {-# INLINE fromHex #-}
 
--- | Create 'Builder', containing a given 'Double'.
+-- | Create 'Builder', containing decimal representation of a given 'Double'.
 --
 -- >>> :set -XMagicHash
 -- >>> fromAddr "pi="# <> fromDouble pi

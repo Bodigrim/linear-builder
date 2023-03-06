@@ -61,7 +61,7 @@ data Buffer ∷ TYPE ('BoxedRep 'Unlifted) where
 unBuffer ∷ Buffer ⊸ Text
 unBuffer (Buffer x) = x
 
--- | Run a linear function on an empty 'Buffer', producing 'Text'.
+-- | Run a linear function on an empty 'Buffer', producing a strict 'Text'.
 --
 -- Be careful to write @runBuffer (\b -> ...)@ instead of @runBuffer $ \b -> ...@,
 -- because current implementation of linear types lacks special support for '($)'.
@@ -76,7 +76,7 @@ unBuffer (Buffer x) = x
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (f (Buffer mempty))
 
--- | Same as 'runBuffer', but returning a UTF-8 encoded 'ByteString'.
+-- | Same as 'runBuffer', but returning a UTF-8 encoded strict 'ByteString'.
 runBufferBS ∷ (Buffer ⊸ Buffer) ⊸ ByteString
 runBufferBS f = case f (Buffer memptyPinned) of
   Buffer (Text (ByteArray arr) (I# from) len) → BS fp len
