@@ -118,7 +118,8 @@ consumeBuffer Buffer {} = ()
 
 -- | Erase buffer's content, replacing it with an empty 'Text'.
 eraseBuffer ∷ Buffer ⊸ Buffer
-eraseBuffer Buffer {} = Buffer mempty
+eraseBuffer (Buffer (Text arr _ _)) =
+  Buffer (if isPinned arr then memptyPinned else mempty)
 
 -- | Return buffer's size in __bytes__ (not in 'Char's).
 -- This could be useful to implement a lazy builder atop of a strict one.
