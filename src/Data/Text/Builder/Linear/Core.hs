@@ -38,8 +38,12 @@ import GHC.ST (ST (..), runST)
 -- clients always work with linear functions 'Buffer' ⊸ 'Buffer' instead
 -- and run them on an empty 'Buffer' to extract results.
 --
--- In terms of @linear-base@ 'Buffer' is @Consumable@ (see 'consumeBuffer')
--- and @Dupable@ (see 'dupBuffer'), but not @Movable@.
+-- In terms of [@linear-base@](https://hackage.haskell.org/package/linear-base)
+-- 'Buffer' is [@Consumable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Consumable)
+-- (see 'consumeBuffer')
+-- and [@Dupable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Dupable)
+-- (see 'dupBuffer'),
+-- but not [@Movable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Movable).
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
 -- >>> import Data.Text.Builder.Linear.Buffer
@@ -49,7 +53,7 @@ import GHC.ST (ST (..), runST)
 -- Remember: this is a strict builder, so on contrary to "Data.Text.Lazy.Builder"
 -- for optimal performance you should use strict left folds instead of lazy right ones.
 --
--- Starting from GHC 9.2, 'Buffer' is an unlifted datatype,
+-- 'Buffer' is an unlifted datatype,
 -- so you can put it into an unboxed tuple @(# ..., ... #)@,
 -- but not into @(..., ...)@.
 data Buffer ∷ TYPE ('BoxedRep 'Unlifted) where
@@ -67,12 +71,17 @@ unBuffer (Buffer x) = x
 -- because current implementation of linear types lacks special support for '($)'.
 -- Another option is to enable @{-# LANGUAGE BlockArguments #-}@
 -- and write @runBuffer \b -> ...@.
--- Alternatively, you can import @Prelude.Linear.($)@ from @linear-base@.
+-- Alternatively, you can import
+-- [@($)@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#v:-36-)
+-- from [@linear-base@](https://hackage.haskell.org/package/linear-base).
 --
--- 'runBuffer' is similar in spirit to mutable arrays API in @Data.Array.Mutable.Linear@,
--- which provides functions like @fromList@ ∷ [@a@] → (@Vector@ @a@ ⊸ @Ur@ b) ⊸ @Ur@ @b@.
--- Here the initial buffer is always empty and @b@ is 'Text'. Since 'Text' is @Movable@,
--- 'Text' and @Ur@ 'Text' are equivalent.
+-- 'runBuffer' is similar in spirit to mutable arrays API in
+-- [@Data.Array.Mutable.Linear@](https://hackage.haskell.org/package/linear-base/docs/Data-Array-Mutable-Linear.html),
+-- which provides functions like
+-- [@fromList@](https://hackage.haskell.org/package/linear-base/docs/Data-Array-Mutable-Linear.html#v:fromList) ∷ [@a@] → (@Vector@ @a@ ⊸ [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) b) ⊸ [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) @b@.
+-- Here the initial buffer is always empty and @b@ is 'Text'. Since 'Text' is
+-- [@Movable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Movable),
+-- 'Text' and [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) 'Text' are equivalent.
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (f (Buffer mempty))
 
@@ -91,7 +100,9 @@ memptyPinned = runST $ do
   pure $ Text arr 0 0
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
--- Similar to @Data.Unrestricted.Linear.Dupable@ from @linear-base@.
+-- Similar to
+-- [@Dupable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Dupable)
+-- from [@linear-base@](https://hackage.haskell.org/package/linear-base).
 --
 -- It is a bit tricky to use because of
 -- <https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/linear_types.html#limitations current limitations>
@@ -106,13 +117,15 @@ memptyPinned = runST $ do
 -- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
 -- "foobar"
 --
--- Note the unboxed tuple: starting from GHC 9.2, 'Buffer' is an unlifted datatype,
+-- Note the unboxed tuple: 'Buffer' is an unlifted datatype,
 -- so it cannot be put into @(..., ...)@.
 dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 
 -- | Consume buffer linearly,
--- similar to @Data.Unrestricted.Linear.Consumable@ from @linear-base@.
+-- similar to
+-- [@Consumable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Consumable)
+-- from [@linear-base@](https://hackage.haskell.org/package/linear-base).
 consumeBuffer ∷ Buffer ⊸ ()
 consumeBuffer Buffer {} = ()
 

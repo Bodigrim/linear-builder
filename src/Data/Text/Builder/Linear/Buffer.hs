@@ -145,7 +145,7 @@ infixr 6 …<|
     buffer
 
 -- | This is just a normal 'Data.List.foldl'', but with a linear arrow
--- and potentially unlifted accumulator.
+-- and unlifted accumulator.
 foldlIntoBuffer ∷ ∀ a. (Buffer ⊸ a → Buffer) → Buffer ⊸ [a] → Buffer
 foldlIntoBuffer f = go
   where
