@@ -48,11 +48,19 @@ newtype Builder = Builder {unBuilder ∷ Buffer ⊸ Buffer}
 --
 -- This function has a polymorphic arrow and thus can be used both in
 -- usual and linear contexts.
+--
+-- The returned 'Text' is likely to be a slice of a larger array,
+-- you might wish to call 'Data.Text.copy' to save some memory
+-- at the expense of performance.
 runBuilder ∷ ∀ m. Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
 
 -- | Same as 'runBuilder', but returning a UTF-8 encoded strict 'ByteString'.
+--
+-- The returned 'ByteString' is likely to be a slice of a larger array,
+-- you might wish to call 'Data.ByteString.copy' to save some memory
+-- at the expense of performance.
 runBuilderBS ∷ ∀ m. Builder %m → ByteString
 runBuilderBS (Builder f) = runBufferBS f
 {-# INLINE runBuilderBS #-}
