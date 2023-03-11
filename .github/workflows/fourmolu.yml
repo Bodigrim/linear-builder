@@ -1,0 +1,11 @@
+name: fourmolu
+on: push
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: fourmolu/fourmolu-action@v6
+        with:
+          pattern: |
+            src/**/*.hs
