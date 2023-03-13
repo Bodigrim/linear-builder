@@ -82,24 +82,23 @@ unBuffer (Buffer x) = x
 -- Here the initial buffer is always empty and @b@ is 'Text'. Since 'Text' is
 -- [@Movable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Movable),
 -- 'Text' and [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) 'Text' are equivalent.
---
--- The returned 'Text' is likely to be a slice of a larger array,
--- you might wish to call 'Data.Text.copy' to save some memory
--- at the expense of performance.
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
-runBuffer f = unBuffer (f (Buffer mempty))
+runBuffer f = unBuffer (shrinkBuffer (f (Buffer mempty)))
 
 -- | Same as 'runBuffer', but returning a UTF-8 encoded strict 'ByteString'.
---
--- The returned 'ByteString' is likely to be a slice of a larger array,
--- you might wish to call 'Data.ByteString.copy' to save some memory
--- at the expense of performance.
 runBufferBS ∷ (Buffer ⊸ Buffer) ⊸ ByteString
-runBufferBS f = case f (Buffer memptyPinned) of
+runBufferBS f = case shrinkBuffer (f (Buffer memptyPinned)) of
   Buffer (Text (ByteArray arr) (I# from) len) → BS fp len
     where
       addr# = byteArrayContents# arr `plusAddr#` from
       fp = ForeignPtr addr# (PlainPtr (unsafeCoerce# arr))
+
+shrinkBuffer ∷ Buffer ⊸ Buffer
+shrinkBuffer (Buffer (Text arr from len)) = Buffer $ runST $ do
+  arrM ← unsafeThaw arr
+  A.shrinkM arrM (from + len)
+  arr' ← A.unsafeFreeze arrM
+  pure $ Text arr' from len
 
 memptyPinned ∷ Text
 memptyPinned = runST $ do
