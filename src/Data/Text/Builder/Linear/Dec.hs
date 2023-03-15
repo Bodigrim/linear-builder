@@ -17,9 +17,9 @@ module Data.Text.Builder.Linear.Dec (
 #include "MachDeps.h"
 
 import Data.Bits (Bits (..), FiniteBits (..))
-import Data.Int (Int16, Int32, Int64, Int8)
+import Data.Int (Int16, Int32, Int8)
 import Data.Text.Array qualified as A
-import Data.Word (Word16, Word32, Word64, Word8)
+import Data.Word (Word16, Word32, Word8)
 import GHC.Exts (Addr#, Int (..), Ptr (..), dataToTag#, (>=#))
 import GHC.Ptr (plusPtr)
 import GHC.ST (ST)
