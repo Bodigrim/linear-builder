@@ -37,7 +37,7 @@ import Data.Text.Builder.Linear.Buffer
 --
 -- Note that (similar to other builders) concatenation of 'Builder's allocates
 -- thunks. This is to a certain extent mitigated by aggressive inlining,
--- but it is faster to use 'Buffer' directly.
+-- and is faster than just using 'Buffer' directly.
 newtype Builder = Builder {unBuilder ∷ Buffer ⊸ Buffer}
 
 -- | Run 'Builder' computation on an empty 'Buffer', returning strict 'Text'.
