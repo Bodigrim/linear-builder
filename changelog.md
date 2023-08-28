@@ -1,3 +1,7 @@
+## 0.1.1.1
+
+* Support `text-2.1`.
+
 ## 0.1.1
 
 * Introduce `ByteString` backend (thanks @oberblastmeister for the idea).
