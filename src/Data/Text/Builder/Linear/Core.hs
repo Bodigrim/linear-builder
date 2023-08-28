@@ -24,7 +24,6 @@ module Data.Text.Builder.Linear.Core (
 
 import Data.ByteString.Internal (ByteString (..))
 import Data.Text qualified as T
-import Data.Text.Array (Array (..), MArray (..))
 import Data.Text.Array qualified as A
 import Data.Text.Internal (Text (..))
 import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, isByteArrayPinned#, isTrue#, plusAddr#, sizeofByteArray#, unsafeCoerce#)
@@ -88,7 +87,7 @@ runBuffer f = unBuffer (shrinkBuffer (f (Buffer mempty)))
 -- | Same as 'runBuffer', but returning a UTF-8 encoded strict 'ByteString'.
 runBufferBS ∷ (Buffer ⊸ Buffer) ⊸ ByteString
 runBufferBS f = case shrinkBuffer (f (Buffer memptyPinned)) of
-  Buffer (Text (ByteArray arr) (I# from) len) → BS fp len
+  Buffer (Text (A.ByteArray arr) (I# from) len) → BS fp len
     where
       addr# = byteArrayContents# arr `plusAddr#` from
       fp = ForeignPtr addr# (PlainPtr (unsafeCoerce# arr))
@@ -180,7 +179,7 @@ takeBuffer nChar (Buffer t@(Text arr off _))
 appendBounded
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
-  → (∀ s. MArray s → Int → ST s Int)
+  → (∀ s. A.MArray s → Int → ST s Int)
   -- ^ Action, which writes bytes __starting__ from the given offset
   -- and returns an actual number of bytes written.
   → Buffer
@@ -204,7 +203,7 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
 appendExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
-  → (∀ s. MArray s → Int → ST s ())
+  → (∀ s. A.MArray s → Int → ST s ())
   -- ^ Action, which writes bytes __starting__ from the given offset
   → Buffer
   ⊸ Buffer
@@ -218,10 +217,10 @@ appendExact srcLen appender =
 prependBounded
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
-  → (∀ s. MArray s → Int → ST s Int)
+  → (∀ s. A.MArray s → Int → ST s Int)
   -- ^ Action, which writes bytes __finishing__ before the given offset
   -- and returns an actual number of bytes written.
-  → (∀ s. MArray s → Int → ST s Int)
+  → (∀ s. A.MArray s → Int → ST s Int)
   -- ^ Action, which writes bytes __starting__ from the given offset
   -- and returns an actual number of bytes written.
   → Buffer
@@ -247,7 +246,7 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
 prependExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
-  → (∀ s. MArray s → Int → ST s ())
+  → (∀ s. A.MArray s → Int → ST s ())
   -- ^ Action, which writes bytes __starting__ from the given offset
   → Buffer
   ⊸ Buffer
@@ -258,15 +257,15 @@ prependExact srcLen appender =
     (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE prependExact #-}
 
-unsafeThaw ∷ Array → ST s (MArray s)
-unsafeThaw (ByteArray a) = ST $ \s# →
-  (# s#, MutableByteArray (unsafeCoerce# a) #)
+unsafeThaw ∷ A.Array → ST s (A.MArray s)
+unsafeThaw (A.ByteArray a) = ST $ \s# →
+  (# s#, A.MutableByteArray (unsafeCoerce# a) #)
 
-sizeofByteArray ∷ Array → Int
-sizeofByteArray (ByteArray a) = I# (sizeofByteArray# a)
+sizeofByteArray ∷ A.Array → Int
+sizeofByteArray (A.ByteArray a) = I# (sizeofByteArray# a)
 
-isPinned ∷ Array → Bool
-isPinned (ByteArray a) = isTrue# (isByteArrayPinned# a)
+isPinned ∷ A.Array → Bool
+isPinned (A.ByteArray a) = isTrue# (isByteArrayPinned# a)
 
 -- | Concatenate two 'Buffer's, potentially mutating both of them.
 --
