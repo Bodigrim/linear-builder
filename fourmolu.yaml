@@ -9,3 +9,4 @@ haddock-style: single-line
 respectful: true
 fixities: []
 unicode: always
+single-constraint-parens: never
