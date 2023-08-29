@@ -66,10 +66,10 @@ unBuffer (Buffer x) = x
 
 -- | Run a linear function on an empty 'Buffer', producing a strict 'Text'.
 --
--- Be careful to write @runBuffer (\b -> ...)@ instead of @runBuffer $ \b -> ...@,
+-- Be careful to write @runBuffer (\\b -> ...)@ instead of @runBuffer $ \\b -> ...@,
 -- because current implementation of linear types lacks special support for '($)'.
 -- Another option is to enable @{-# LANGUAGE BlockArguments #-}@
--- and write @runBuffer \b -> ...@.
+-- and write @runBuffer \\b -> ...@.
 -- Alternatively, you can import
 -- [@($)@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#v:-36-)
 -- from [@linear-base@](https://hackage.haskell.org/package/linear-base).
@@ -153,7 +153,7 @@ byteSizeOfBuffer (Buffer t@(Text _ _ len)) = (# Buffer t, fromIntegral len #)
 --
 -- dropEndBuffer :: Word -> Buffer %1 -> Buffer
 -- dropEndBuffer n buf =
---   (\(# buf', len #) -> case move len of Ur len' -> takeBuffer (len' - n) buf')
+--   (\\(# buf', len #) -> case move len of Ur len' -> takeBuffer (len' - n) buf')
 --     (lengthOfBuffer buf)
 -- @
 lengthOfBuffer ∷ Buffer ⊸ (# Buffer, Word #)
