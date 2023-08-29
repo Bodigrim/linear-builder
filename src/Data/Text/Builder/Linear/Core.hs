@@ -247,7 +247,7 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
       pure $ Text new newOff (dstLen + srcLen)
 {-# INLINE prependBounded #-}
 
--- | Low-level routine to append data of unknown size to a 'Buffer'.
+-- | Low-level routine to append data of known size to a 'Buffer'.
 prependExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
