@@ -29,7 +29,7 @@ buffer |>% x =
     (\dst dstOff → unsafeAppendDouble dst dstOff x)
     buffer
 
--- | Prepend double
+-- | Prepend double.
 (%<|) ∷ Double → Buffer ⊸ Buffer
 
 infixr 6 %<|
