@@ -14,7 +14,9 @@ import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
 
--- | Append hexadecimal number.
+-- | Append the lower-case hexadecimal represensation of a /non-negative/ number.
+--
+-- __Warning:__ this function has an undefined behaviour for negative numbers.
 (|>&) ∷ (Integral a, FiniteBits a) ⇒ Buffer ⊸ a → Buffer
 
 infixl 6 |>&
@@ -25,7 +27,9 @@ buffer |>& n =
     buffer
 {-# INLINEABLE (|>&) #-}
 
--- | Prepend hexadecimal number.
+-- | Prepend the lower-case hexadecimal representation of a /non-negative/ number.
+--
+-- __Warning:__ this function has an undefined behaviour for negative numbers.
 (&<|) ∷ (Integral a, FiniteBits a) ⇒ a → Buffer ⊸ Buffer
 
 infixr 6 &<|
