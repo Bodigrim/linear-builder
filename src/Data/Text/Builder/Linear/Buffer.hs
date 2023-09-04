@@ -22,22 +22,27 @@ module Data.Text.Builder.Linear.Buffer (
   (.<|),
 
   -- * Multiple characters
+
   -- ** Text
   (|>),
   (<|),
   (|>…),
   (…<|),
+
   -- ** Raw 'Addr#'
   (|>#),
   (<|#),
 
   -- * Number formatting
+
   -- ** Decimal
   (|>$),
   ($<|),
+
   -- ** Hexadecimal
   (|>&),
   (&<|),
+
   -- ** Double
   (|>%),
   (%<|),
