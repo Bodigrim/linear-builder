@@ -5,28 +5,42 @@
 --
 -- 'Buffer' for strict 'Text', based on linear types.
 module Data.Text.Builder.Linear.Buffer (
+  -- * Type
   Buffer,
+
+  -- * Basic interface
   runBuffer,
   runBufferBS,
   dupBuffer,
   consumeBuffer,
   eraseBuffer,
   foldlIntoBuffer,
-  (|>),
-  (|>.),
-  (|>#),
-  (<|),
-  (.<|),
-  (<|#),
   (><),
-  (|>$),
-  ($<|),
-  (|>%),
-  (%<|),
-  (|>&),
-  (&<|),
+
+  -- * Single character
+  (|>.),
+  (.<|),
+
+  -- * Multiple characters
+  -- ** Text
+  (|>),
+  (<|),
   (|>…),
   (…<|),
+  -- ** Raw 'Addr#'
+  (|>#),
+  (<|#),
+
+  -- * Number formatting
+  -- ** Decimal
+  (|>$),
+  ($<|),
+  -- ** Hexadecimal
+  (|>&),
+  (&<|),
+  -- ** Double
+  (|>%),
+  (%<|),
 ) where
 
 import Data.Text.Array qualified as A
