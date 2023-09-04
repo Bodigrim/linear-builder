@@ -85,5 +85,10 @@ benchmark linear-builder-bench
         bytestring,
         text,
         text-builder-linear,
+        -- NOTE: The following packages are optional, but are not required that
+        --       often. While they could be guarded by a flag, we prefer keeping
+        --       the Hackage page simple. Just uncomment these lines when needed.
+        -- bytestring-strict-builder >= 0.4.5 && < 0.5
+        -- text-builder >= 0.6.7 && < 0.7,
         tasty,
         tasty-bench >=0.3.2 && <0.4
