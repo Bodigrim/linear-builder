@@ -5,7 +5,10 @@
 --
 -- Low-level routines for 'Buffer' manipulations.
 module Data.Text.Builder.Linear.Core (
+  -- * Type
   Buffer,
+
+  -- * Basic interface
   runBuffer,
   runBufferBS,
   dupBuffer,
@@ -15,6 +18,8 @@ module Data.Text.Builder.Linear.Core (
   lengthOfBuffer,
   dropBuffer,
   takeBuffer,
+
+  -- * Text concatenation
   appendBounded,
   appendExact,
   prependBounded,
