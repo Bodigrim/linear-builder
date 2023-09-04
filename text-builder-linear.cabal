@@ -22,6 +22,16 @@ source-repository head
     type:     git
     location: git://github.com/Bodigrim/linear-builder.git
 
+flag use-text-builder
+  description: Use text-builder in tests
+  manual: True
+  default: False
+
+flag use-bytestring-strict-builder
+  description: Use bytestring-strict-builder in tests
+  manual: True
+  default: False
+
 library
     exposed-modules:
         Data.Text.Builder.Linear
@@ -87,3 +97,7 @@ benchmark linear-builder-bench
         text-builder-linear,
         tasty,
         tasty-bench >=0.3.2 && <0.4
+    if flag(use-text-builder)
+        build-depends: text-builder >= 0.6.7 && < 0.7
+    if flag(use-bytestring-strict-builder)
+        build-depends: bytestring-strict-builder >= 0.4.5 && < 0.5
