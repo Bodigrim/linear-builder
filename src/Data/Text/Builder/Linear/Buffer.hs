@@ -31,6 +31,7 @@ module Data.Text.Builder.Linear.Buffer (
 
   -- ** Raw 'Addr#'
   (|>#),
+  ( #<| ), -- NOTE: extra spaces required because of -XUnboxedTuples
   (<|#),
 
   -- * Number formatting
@@ -75,7 +76,7 @@ buffer |> (Text src srcOff srcLen) =
     buffer
 
 -- | Prepend 'Text' prefix to a 'Buffer' by mutating it.
--- If a prefix is statically known, consider using '(<|#)' for optimal performance.
+-- If a prefix is statically known, consider using '(#<|)' for optimal performance.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
 -- >>> runBuffer (\b -> "foo" <| "bar" <| b)
@@ -98,8 +99,6 @@ Text src srcOff srcLen <| buffer =
 --
 -- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
 -- these conditions are not checked.
---
--- Note the inconsistency in naming: unfortunately, GHC parser does not allow for @#<|@.
 (|>#) ∷ Buffer ⊸ Addr# → Buffer
 
 infixl 6 |>#
@@ -115,21 +114,33 @@ buffer |># addr# =
 -- to a 'Buffer' by mutating it. E. g.,
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
--- >>> runBuffer (\b -> "foo"# <|# "bar"# <|# b)
+-- >>> runBuffer (\b -> "foo"# #<| "bar"# #<| b)
 -- "foobar"
 --
 -- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
 -- these conditions are not checked.
-(<|#) ∷ Addr# → Buffer ⊸ Buffer
+--
+-- /Note:/ When the syntactic extensions @UnboxedTuples@ or @UnboxedSums@ are
+-- enabled, extra spaces are required when using parentheses: i.e. use @( '#<|' )@
+-- instead of @('#<|')@. See the GHC User Guide chapter
+-- “[Unboxed types and primitive operations](https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/primitives.html#unboxed-tuples)”
+-- for futher information.
+( #<| ) ∷ Addr# → Buffer ⊸ Buffer
 
-infixr 6 <|#
-addr# <|# buffer =
+infixr 6 #<|, <|#
+addr# #<| buffer =
   prependExact
     srcLen
     (\dst dstOff → A.copyFromPointer dst dstOff (Ptr addr#) srcLen)
     buffer
   where
     srcLen = I# (cstringLength# addr#)
+
+-- | Alias for @'(#<|)'@.
+{-# DEPRECATED (<|#) "Use '(#<|)' instead" #-}
+(<|#) ∷ Addr# → Buffer ⊸ Buffer
+(<|#) = ( #<| ) -- NOTE: extra spaces required because of -XUnboxedTuples
+{-# INLINE (<|#) #-}
 
 -- | Append given number of spaces.
 (|>…) ∷ Buffer ⊸ Word → Buffer

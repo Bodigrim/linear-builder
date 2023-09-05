@@ -144,7 +144,7 @@ prop4 acts = runBuffer f1 === runBuffer f2
   where
     addr# = "foo"#
     f1, f2 :: Buffer ⊸ Buffer
-    f1 = \b → addr# <|# interpretOnBuffer acts b
+    f1 = \b → addr# #<| interpretOnBuffer acts b
     f2 = \b → T.pack "foo" <| interpretOnBuffer acts b
 
 prop5 ∷ [Action] → Property
