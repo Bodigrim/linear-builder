@@ -124,7 +124,7 @@ buffer |># addr# =
 -- enabled, extra spaces are required when using parentheses: i.e. use @( '#<|' )@
 -- instead of @('#<|')@. See the GHC User Guide chapter
 -- “[Unboxed types and primitive operations](https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/primitives.html#unboxed-tuples)”
--- for futher information.
+-- for further information.
 ( #<| ) ∷ Addr# → Buffer ⊸ Buffer
 
 infixr 6 #<|, <|#
