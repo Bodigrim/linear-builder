@@ -9,8 +9,7 @@ module Data.Text.Builder.Linear.Hex (
 
 import Data.Bits (Bits (..), FiniteBits (..))
 import Data.Text.Array qualified as A
-import Data.Int (Int8, Int16, Int32, Int64)
-import Data.Word (Word8, Word16, Word32, Word64)
+import Data.Word (Word16, Word32, Word64, Word8)
 import GHC.Exts (Int (..), (>#))
 import GHC.ST (ST)
 
@@ -34,15 +33,7 @@ buffer |>& n =
     (finiteBitSize n `shiftR` 2)
     (\dst dstOff → unsafeAppendHex dst dstOff n)
     buffer
-{-# INLINEABLE[1] (|>&) #-}
-
-{-# RULES
-  "|>&/Int"   (|>&) = (\b n -> b |>& fromIntegral @Int   @Word   n);
-  "|>&/Int8"  (|>&) = (\b n -> b |>& fromIntegral @Int8  @Word8  n);
-  "|>&/Int16" (|>&) = (\b n -> b |>& fromIntegral @Int16 @Word16 n);
-  "|>&/Int32" (|>&) = (\b n -> b |>& fromIntegral @Int32 @Word32 n);
-  "|>&/Int64" (|>&) = (\b n -> b |>& fromIntegral @Int64 @Word64 n);
-  #-}
+{-# INLINEABLE (|>&) #-}
 
 -- | Prepend the lower-case hexadecimal representation of a number.
 --
@@ -63,15 +54,7 @@ n &<| buffer =
     (\dst dstOff → unsafePrependHex dst dstOff n)
     (\dst dstOff → unsafeAppendHex dst dstOff n)
     buffer
-{-# INLINEABLE[1] (&<|) #-}
-
-{-# RULES
-  "&<|/Int"   (&<|) = (\n b -> fromIntegral @Int   @Word   n &<| b);
-  "&<|/Int8"  (&<|) = (\n b -> fromIntegral @Int8  @Word8  n &<| b);
-  "&<|/Int16" (&<|) = (\n b -> fromIntegral @Int16 @Word16 n &<| b);
-  "&<|/Int32" (&<|) = (\n b -> fromIntegral @Int32 @Word32 n &<| b);
-  "&<|/Int64" (&<|) = (\n b -> fromIntegral @Int64 @Word64 n &<| b)
-  #-}
+{-# INLINEABLE (&<|) #-}
 
 unsafeAppendHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
 unsafeAppendHex marr !off 0 =
@@ -107,11 +90,15 @@ unsafePrependHex marr !off n = go (off - 1) n
 -- instead of doing it on every iteration of unsafe{Ap,Pre}pernHex.go,
 -- but the performance impact is likely negligible.
 dropNibble ∷ (Integral a, FiniteBits a) ⇒ a → a
-dropNibble x
+dropNibble x = case (isSigned x, finiteBitSize x) of
   -- This is morally 'iShiftRL#', 'uncheckedIShiftRA64#', etc.,
   -- but there is no polymorphic interface to access them.
-  | isSigned x = shiftR x 4 .&. ((1 `shiftL` (finiteBitSize x - 4)) - 1)
-  | otherwise = shiftR x 4
+  (True, 8) → fromIntegral @Word8 (shiftR (fromIntegral x) 4)
+  (True, 16) → fromIntegral @Word16 (shiftR (fromIntegral x) 4)
+  (True, 32) → fromIntegral @Word32 (shiftR (fromIntegral x) 4)
+  (True, 64) → fromIntegral @Word64 (shiftR (fromIntegral x) 4)
+  (True, _) → shiftR x 4 .&. ((1 `shiftL` (finiteBitSize x - 4)) - 1)
+  _ → shiftR x 4
 {-# INLINE dropNibble #-}
 
 -- | This assumes n /= 0.
