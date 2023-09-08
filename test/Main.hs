@@ -48,7 +48,7 @@ data Action
   | PrependChar Char
   | AppendHex Word
   | DecInt Int8 Int16 (IntN 30) (IntN 31) Int32 (IntN 33) Int64
-  | DecWord Word8 Word16 Word32 Word64
+  | DecWord Word8 Word16 (WordN 30) (WordN 31) Word32 (WordN 33) Word64
   | PrependHex Word
   | AppendDecW Word
   | PrependDecW Word
@@ -81,8 +81,8 @@ instance Arbitrary Action where
     , pure $ DecInt minBound minBound minBound minBound minBound minBound minBound
     , pure $ DecInt maxBound maxBound maxBound maxBound maxBound maxBound maxBound
     , pure $ DecInt 0 0 0 0 0 0 0
-    , pure $ DecWord minBound minBound minBound minBound
-    , pure $ DecWord maxBound maxBound maxBound maxBound
+    , pure $ DecWord minBound minBound minBound minBound minBound minBound minBound
+    , pure $ DecWord maxBound maxBound maxBound maxBound maxBound maxBound maxBound
     , AppendDouble  <$> arbitrary
     , PrependDouble <$> arbitrary
     , AppendSpaces . getNonNegative <$> arbitrary
@@ -104,9 +104,10 @@ interpretOnText xs z = foldl' go z xs
                            = intersperseText [decimal s, decimal t, decimal x]
                            <> b
                            <> intersperseText [decimal r, decimal u, decimal v, decimal w]
-    go b (DecWord u v w x) = intersperseText [decimal u, decimal x]
+    go b (DecWord r s t u v w x) 
+                           = intersperseText [decimal s, decimal t, decimal x]
                            <> b
-                           <> intersperseText [decimal v, decimal w]
+                           <> intersperseText [decimal r, decimal u, decimal v, decimal w]
     go b (AppendDecW    x) = b <> toStrict (toLazyText (decimal x))
     go b (PrependDecW   x) = toStrict (toLazyText (decimal x)) <> b
     go b (AppendDecI    x) = b <> toStrict (toLazyText (decimal x))
@@ -132,8 +133,8 @@ interpretOnBuffer xs z = foldlIntoBuffer go z xs
     go b (PrependChar    x) = x .<| b
     go b (AppendHex      x) = b |>& x
     go b (PrependHex     x) = x &<| b
-    go b (DecInt r s t u v w x) = s $<| ";"# #<| t $<| ";"# #<| x $<| (b |>$ r |># ";"# |>$ u |># ";"# |>$ v |># ";"# |>$ w)
-    go b (DecWord  u v w x) = u $<| ";"# #<| x $<| (b |>$ v |># ";"# |>$ w)
+    go b (DecInt  r s t u v w x) = s $<| ";"# #<| t $<| ";"# #<| x $<| (b |>$ r |># ";"# |>$ u |># ";"# |>$ v |># ";"# |>$ w)
+    go b (DecWord r s t u v w x) = s $<| ";"# #<| t $<| ";"# #<| x $<| (b |>$ r |># ";"# |>$ u |># ";"# |>$ v |># ";"# |>$ w)
     go b (AppendDecW     x) = b |>$ x
     go b (PrependDecW    x) = x $<| b
     go b (AppendDecI     x) = b |>$ x
@@ -242,4 +243,51 @@ instance (KnownNat n) => Bits (IntN n) where
   popCount = undefined
 
 instance (KnownNat n) => FiniteBits (IntN n) where
+  finiteBitSize = const (intSize (Proxy @n))
+
+--------------------------------------------------------------------------------
+-- WordN
+--------------------------------------------------------------------------------
+
+newtype WordN (n ∷ Natural) = WordN' Word64
+  deriving stock (Eq, Ord, Show)
+  deriving newtype (Enum, Real, Integral)
+
+pattern WordN ∷ forall n. (KnownNat n) => Word64 → WordN n
+pattern WordN x ← WordN' x where
+  WordN x = WordN' (x .&. ((1 `shiftL` intSize (Proxy @n)) - 1))
+
+{-# COMPLETE WordN #-}
+
+instance (KnownNat n) => Arbitrary (WordN n) where
+  arbitrary = WordN <$> arbitrary
+  shrink = shrinkIntegral
+
+instance (KnownNat n) => Bounded (WordN n) where
+  minBound = WordN' 0
+  maxBound = WordN ((1 `shiftL` intSize (Proxy @n)) - 1)
+
+instance (KnownNat n) => Num (WordN n) where
+  WordN x + WordN y = WordN (x + y)
+  WordN x * WordN y = WordN (x * y)
+  abs = id
+  signum = undefined
+  negate (WordN x) = WordN (negate x)
+  fromInteger x = WordN (fromInteger x)
+
+instance (KnownNat n) => Bits (WordN n) where
+  WordN a .&. WordN b = WordN (a .&. b)
+  WordN a .|. WordN b = WordN (a .|. b)
+  xor = undefined
+  complement (WordN x) = WordN (complement x)
+  shift (WordN x) i = WordN (shift x i)
+  rotate = undefined
+  bitSize = const (intSize (Proxy @n))
+  bitSizeMaybe = const (Just (intSize (Proxy @n)))
+  isSigned = const False
+  testBit (WordN x) = testBit x
+  bit = bitDefault
+  popCount = undefined
+
+instance (KnownNat n) => FiniteBits (WordN n) where
   finiteBitSize = const (intSize (Proxy @n))
