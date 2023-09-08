@@ -9,6 +9,8 @@ module Data.Text.Builder.Linear.Hex (
 
 import Data.Bits (Bits (..), FiniteBits (..))
 import Data.Text.Array qualified as A
+import Data.Int (Int8, Int16, Int32, Int64)
+import Data.Word (Word8, Word16, Word32, Word64)
 import GHC.Exts (Int (..), (>#))
 import GHC.ST (ST)
 
@@ -32,7 +34,15 @@ buffer |>& n =
     (finiteBitSize n `shiftR` 2)
     (\dst dstOff → unsafeAppendHex dst dstOff n)
     buffer
-{-# INLINEABLE (|>&) #-}
+{-# INLINEABLE[1] (|>&) #-}
+
+{-# RULES
+  "|>&/Int"   (|>&) = (\b n -> b |>& fromIntegral @Int   @Word   n);
+  "|>&/Int8"  (|>&) = (\b n -> b |>& fromIntegral @Int8  @Word8  n);
+  "|>&/Int16" (|>&) = (\b n -> b |>& fromIntegral @Int16 @Word16 n);
+  "|>&/Int32" (|>&) = (\b n -> b |>& fromIntegral @Int32 @Word32 n);
+  "|>&/Int64" (|>&) = (\b n -> b |>& fromIntegral @Int64 @Word64 n);
+  #-}
 
 -- | Prepend the lower-case hexadecimal representation of a number.
 --
@@ -53,7 +63,15 @@ n &<| buffer =
     (\dst dstOff → unsafePrependHex dst dstOff n)
     (\dst dstOff → unsafeAppendHex dst dstOff n)
     buffer
-{-# INLINEABLE (&<|) #-}
+{-# INLINEABLE[1] (&<|) #-}
+
+{-# RULES
+  "&<|/Int"   (&<|) = (\n b -> fromIntegral @Int   @Word   n &<| b);
+  "&<|/Int8"  (&<|) = (\n b -> fromIntegral @Int8  @Word8  n &<| b);
+  "&<|/Int16" (&<|) = (\n b -> fromIntegral @Int16 @Word16 n &<| b);
+  "&<|/Int32" (&<|) = (\n b -> fromIntegral @Int32 @Word32 n &<| b);
+  "&<|/Int64" (&<|) = (\n b -> fromIntegral @Int64 @Word64 n &<| b)
+  #-}
 
 unsafeAppendHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
 unsafeAppendHex marr !off 0 =
