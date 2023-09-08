@@ -14,9 +14,16 @@ import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
 
--- | Append the lower-case hexadecimal represensation of a /non-negative/ number.
+-- | Append the lower-case hexadecimal represensation of a number.
 --
--- __Warning:__ this function has an undefined behaviour for negative numbers.
+-- Negative numbers are interpreted as their corresponding unsigned number, e.g.
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes
+-- >>> import Data.Int (Int8, Int16)
+-- >>> runBuffer (\b -> b |>& (-1 :: Int8)) == "ff"
+-- True
+-- >>> runBuffer (\b -> b |>& (-1 :: Int16)) == "ffff"
+-- True
 (|>&) ∷ (Integral a, FiniteBits a) ⇒ Buffer ⊸ a → Buffer
 
 infixl 6 |>&
@@ -27,9 +34,16 @@ buffer |>& n =
     buffer
 {-# INLINEABLE (|>&) #-}
 
--- | Prepend the lower-case hexadecimal representation of a /non-negative/ number.
+-- | Prepend the lower-case hexadecimal representation of a number.
 --
--- __Warning:__ this function has an undefined behaviour for negative numbers.
+-- Negative numbers are interpreted as their corresponding unsigned number, e.g.
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes
+-- >>> import Data.Int (Int8, Int16)
+-- >>> runBuffer (\b -> (-1 :: Int8) &<| b) == "ff"
+-- True
+-- >>> runBuffer (\b -> (-1 :: Int16) &<| b) == "ffff"
+-- True
 (&<|) ∷ (Integral a, FiniteBits a) ⇒ a → Buffer ⊸ Buffer
 
 infixr 6 &<|
@@ -52,7 +66,7 @@ unsafeAppendHex marr !off n = go (off + len - 1) n
     go !o m = do
       let nibble = m .&. 0x0f
       writeNibbleAsHex marr o (fromIntegral nibble)
-      go (o - 1) (m `shiftR` 4)
+      go (o - 1) (dropNibble m)
 {-# INLINEABLE unsafeAppendHex #-}
 
 unsafePrependHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
@@ -64,8 +78,23 @@ unsafePrependHex marr !off n = go (off - 1) n
     go !o m = do
       let nibble = m .&. 0x0f
       writeNibbleAsHex marr o (fromIntegral nibble)
-      go (o - 1) (m `shiftR` 4)
+      go (o - 1) (dropNibble m)
 {-# INLINEABLE unsafePrependHex #-}
+
+-- | The usual 'shiftR' performs sign extension on signed number types,
+-- filling the top bits with 1 if the argument is negative.
+-- We don't want this behaviour here.
+--
+-- It would suffice to clean the sign bit only once
+-- instead of doing it on every iteration of unsafe{Ap,Pre}pernHex.go,
+-- but the performance impact is likely negligible.
+dropNibble ∷ (Integral a, FiniteBits a) ⇒ a → a
+dropNibble x
+  -- This is morally 'iShiftRL#', 'uncheckedIShiftRA64#', etc.,
+  -- but there is no polymorphic interface to access them.
+  | isSigned x = shiftR x 4 .&. ((1 `shiftL` (finiteBitSize x - 4)) - 1)
+  | otherwise = shiftR x 4
+{-# INLINE dropNibble #-}
 
 -- | This assumes n /= 0.
 lengthAsHex ∷ FiniteBits a ⇒ a → Int
