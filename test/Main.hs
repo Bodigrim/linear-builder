@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
 -- Licence:     BSD3
@@ -7,15 +9,22 @@ module Main where
 
 import Data.Bits (Bits(..), FiniteBits(..), bitDefault)
 import Data.Foldable
+import Data.Int
+import Data.List (intersperse)
+import Data.Proxy (Proxy(..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Text.Builder.Linear.Buffer
 import Data.Text.Internal (Text(..))
 import Data.Text.Lazy (toStrict)
+import Data.Text.Lazy.Builder qualified as TB
 import Data.Text.Lazy.Builder (toLazyText)
 import Data.Text.Lazy.Builder.Int (decimal, hexadecimal)
 import Data.Text.Lazy.Builder.RealFloat (realFloat)
+import Data.Word
 import GHC.Generics
+import GHC.TypeLits (natVal, KnownNat)
+import Numeric.Natural (Natural)
 import Test.Tasty
 import Test.Tasty.QuickCheck hiding ((><), (.&.))
 
@@ -38,11 +47,15 @@ data Action
   | AppendChar Char
   | PrependChar Char
   | AppendHex Word
+  | DecInt Int8 Int16 (IntN 30) (IntN 31) Int32 (IntN 33) Int64
+  | DecWord Word8 Word16 Word32 Word64
   | PrependHex Word
-  | AppendDec Int
-  | PrependDec Int
-  | AppendDec30 Int30
-  | PrependDec30 Int30
+  | AppendDecW Word
+  | PrependDecW Word
+  | AppendDecI Int
+  | PrependDecI Int
+  | AppendDecI30 (IntN 30)
+  | PrependDecI30 (IntN 30)
   | AppendDouble Double
   | PrependDouble Double
   | AppendSpaces Word
@@ -57,15 +70,19 @@ instance Arbitrary Action where
     , PrependChar   <$> arbitraryUnicodeChar
     , AppendHex     <$> arbitraryBoundedIntegral
     , PrependHex    <$> arbitraryBoundedIntegral
-    , AppendDec     <$> arbitraryBoundedIntegral
-    , PrependDec    <$> arbitraryBoundedIntegral
-    , AppendDec30   <$> arbitraryBoundedIntegral
-    , PrependDec30  <$> arbitraryBoundedIntegral
+    , AppendDecW    <$> arbitraryBoundedIntegral
+    , PrependDecW   <$> arbitraryBoundedIntegral
+    , AppendDecI    <$> arbitraryBoundedIntegral
+    , PrependDecI   <$> arbitraryBoundedIntegral
+    , AppendDecI30  <$> arbitraryBoundedIntegral
+    , PrependDecI30 <$> arbitraryBoundedIntegral
     , pure $ AppendHex minBound
     , pure $ AppendHex maxBound
-    , pure $ AppendDec minBound
-    , pure $ AppendDec maxBound
-    , pure $ AppendDec 0
+    , pure $ DecInt minBound minBound minBound minBound minBound minBound minBound
+    , pure $ DecInt maxBound maxBound maxBound maxBound maxBound maxBound maxBound
+    , pure $ DecInt 0 0 0 0 0 0 0
+    , pure $ DecWord minBound minBound minBound minBound
+    , pure $ DecWord maxBound maxBound maxBound maxBound
     , AppendDouble  <$> arbitrary
     , PrependDouble <$> arbitrary
     , AppendSpaces . getNonNegative <$> arbitrary
@@ -83,33 +100,50 @@ interpretOnText xs z = foldl' go z xs
     go b (PrependChar   x) = T.cons x b
     go b (AppendHex     x) = b <> toStrict (toLazyText (hexadecimal x))
     go b (PrependHex    x) = toStrict (toLazyText (hexadecimal x)) <> b
-    go b (AppendDec     x) = b <> toStrict (toLazyText (decimal x))
-    go b (PrependDec    x) = toStrict (toLazyText (decimal x)) <> b
-    go b (AppendDec30   x) = b <> toStrict (toLazyText (decimal x))
-    go b (PrependDec30  x) = toStrict (toLazyText (decimal x)) <> b
+    go b (DecInt r s t u v w x)
+                           = intersperseText [decimal s, decimal t, decimal x]
+                           <> b
+                           <> intersperseText [decimal r, decimal u, decimal v, decimal w]
+    go b (DecWord u v w x) = intersperseText [decimal u, decimal x]
+                           <> b
+                           <> intersperseText [decimal v, decimal w]
+    go b (AppendDecW    x) = b <> toStrict (toLazyText (decimal x))
+    go b (PrependDecW   x) = toStrict (toLazyText (decimal x)) <> b
+    go b (AppendDecI    x) = b <> toStrict (toLazyText (decimal x))
+    go b (PrependDecI   x) = toStrict (toLazyText (decimal x)) <> b
+    go b (AppendDecI30  x) = b <> toStrict (toLazyText (decimal x))
+    go b (PrependDecI30 x) = toStrict (toLazyText (decimal x)) <> b
     go b (AppendDouble  x) = b <> toStrict (toLazyText (realFloat x))
     go b (PrependDouble x) = toStrict (toLazyText (realFloat x)) <> b
     go b (AppendSpaces  n) = b <> T.replicate (fromIntegral n) (T.singleton ' ')
     go b (PrependSpaces n) = T.replicate (fromIntegral n) (T.singleton ' ') <> b
 
+    intersperseText ∷ [TB.Builder] → Text
+    intersperseText bs =
+      toStrict (toLazyText (mconcat (intersperse (TB.singleton ';') bs)))
+
 interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
 interpretOnBuffer xs z = foldlIntoBuffer go z xs
   where
     go ∷ Buffer ⊸ Action → Buffer
-    go b (AppendText    x) = b |> x
-    go b (PrependText   x) = x <| b
-    go b (AppendChar    x) = b |>. x
-    go b (PrependChar   x) = x .<| b
-    go b (AppendHex     x) = b |>& x
-    go b (PrependHex    x) = x &<| b
-    go b (AppendDec     x) = b |>$ x
-    go b (PrependDec    x) = x $<| b
-    go b (AppendDec30   x) = b |>$ x
-    go b (PrependDec30  x) = x $<| b
-    go b (AppendDouble  x) = b |>% x
-    go b (PrependDouble x) = x %<| b
-    go b (AppendSpaces  n) = b |>… n
-    go b (PrependSpaces n) = n …<| b
+    go b (AppendText     x) = b |> x
+    go b (PrependText    x) = x <| b
+    go b (AppendChar     x) = b |>. x
+    go b (PrependChar    x) = x .<| b
+    go b (AppendHex      x) = b |>& x
+    go b (PrependHex     x) = x &<| b
+    go b (DecInt r s t u v w x) = s $<| ";"# #<| t $<| ";"# #<| x $<| (b |>$ r |># ";"# |>$ u |># ";"# |>$ v |># ";"# |>$ w)
+    go b (DecWord  u v w x) = u $<| ";"# #<| x $<| (b |>$ v |># ";"# |>$ w)
+    go b (AppendDecW     x) = b |>$ x
+    go b (PrependDecW    x) = x $<| b
+    go b (AppendDecI     x) = b |>$ x
+    go b (PrependDecI    x) = x $<| b
+    go b (AppendDecI30   x) = b |>$ x
+    go b (PrependDecI30  x) = x $<| b
+    go b (AppendDouble   x) = b |>% x
+    go b (PrependDouble  x) = x %<| b
+    go b (AppendSpaces   n) = b |>… n
+    go b (PrependSpaces  n) = n …<| b
 
 main ∷ IO ()
 main = defaultMain $ testGroup "All"
@@ -151,55 +185,61 @@ prop5 ∷ [Action] → Property
 prop5 acts = T.encodeUtf8 (interpretOnText acts mempty) ===
   runBufferBS (\b → interpretOnBuffer acts b)
 
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+-- IntN
+--------------------------------------------------------------------------------
 
-newtype Int30 = Int30' Int
+newtype IntN (n ∷ Natural) = IntN' Int64
   deriving stock (Eq, Ord, Show)
   deriving newtype (Enum, Real, Integral)
 
-pattern Int30 :: Int -> Int30
-pattern Int30 x <- Int30' x where
-  Int30 x = Int30' x'
+pattern IntN ∷ forall n. (KnownNat n) => Int64 → IntN n
+pattern IntN x ← IntN' x where
+  IntN x = IntN' x'
     where
-    -- If the 30th bit is 1, then interpret the value as negative and fill the
-    -- bits from 30th position with 1s. Otherwise clear them to 0s.
-    x' = if testBit x 29
+    -- If the nth bit is 1, then interpret the value as negative and fill the
+    -- bits from nth position with 1s. Otherwise clear them to 0s.
+    size = intSize (Proxy @n)
+    x' = if testBit x (size - 1)
       then x .|. m1
       else x .&. m2
-    m1 = complement ((1 `shiftL` 29) - 1)
-    m2 = (1 `shiftL` 30) - 1
+    m1 = complement ((1 `shiftL` (size - 1)) - 1)
+    m2 = (1 `shiftL` size) - 1
 
-{-# COMPLETE Int30 #-}
+{-# COMPLETE IntN #-}
 
-instance Arbitrary Int30 where
-  arbitrary = Int30 <$> arbitrary
-  shrink (Int30 x) = Int30 <$> shrink x
+intSize ∷ forall p n. (KnownNat n) => p n → Int
+intSize _ = fromInteger (natVal (Proxy @n))
 
-instance Bounded Int30 where
-  minBound = Int30 (negate (1 `shiftL` 29))
-  maxBound = Int30 ((1 `shiftL` 29) - 1)
+instance (KnownNat n) => Arbitrary (IntN n) where
+  arbitrary = IntN <$> arbitrary
+  shrink = shrinkIntegral
 
-instance Num Int30 where
-  Int30 x + Int30 y = Int30 (x + y)
-  Int30 x * Int30 y = Int30 (x * y)
-  abs (Int30 x) = Int30 (abs x)
+instance (KnownNat n) => Bounded (IntN n) where
+  minBound = IntN (negate (1 `shiftL` (intSize (Proxy @n) - 1)))
+  maxBound = IntN ((1 `shiftL` (intSize (Proxy @n) - 1)) - 1)
+
+instance (KnownNat n) => Num (IntN n) where
+  IntN x + IntN y = IntN (x + y)
+  IntN x * IntN y = IntN (x * y)
+  abs (IntN x) = IntN (abs x)
   signum = undefined
-  negate  (Int30 x) = Int30 (negate x)
-  fromInteger x = Int30 (fromInteger x)
+  negate (IntN x) = IntN (negate x)
+  fromInteger x = IntN (fromInteger x)
 
-instance Bits Int30 where
-  Int30 a .&. Int30 b = Int30 (a .&. b)
-  Int30 a .|. Int30 b = Int30 (a .|. b)
+instance (KnownNat n) => Bits (IntN n) where
+  IntN a .&. IntN b = IntN (a .&. b)
+  IntN a .|. IntN b = IntN (a .|. b)
   xor = undefined
-  complement (Int30 x) = Int30 (complement x)
-  shift (Int30 x) i = Int30 (shift x i)
+  complement (IntN x) = IntN (complement x)
+  shift (IntN x) i = IntN (shift x i)
   rotate = undefined
-  bitSize = const 30
-  bitSizeMaybe = const (Just 30)
+  bitSize = const (intSize (Proxy @n))
+  bitSizeMaybe = const (Just (intSize (Proxy @n)))
   isSigned = const True
-  testBit (Int30 x) = testBit x
+  testBit (IntN x) = testBit x
   bit = bitDefault
   popCount = undefined
 
-instance FiniteBits Int30 where
-  finiteBitSize = const 30
+instance (KnownNat n) => FiniteBits (IntN n) where
+  finiteBitSize = const (intSize (Proxy @n))
