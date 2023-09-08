@@ -30,7 +30,7 @@ import Data.Text.Builder.Linear.Core
 infixl 6 |>&
 buffer |>& n =
   appendBounded
-    (finiteBitSize n `shiftR` 2)
+    (maxHexLen n)
     (\dst dstOff → unsafeAppendHex dst dstOff n)
     buffer
 {-# INLINEABLE (|>&) #-}
@@ -50,11 +50,16 @@ buffer |>& n =
 infixr 6 &<|
 n &<| buffer =
   prependBounded
-    (finiteBitSize n `shiftR` 2)
+    (maxHexLen n)
     (\dst dstOff → unsafePrependHex dst dstOff n)
     (\dst dstOff → unsafeAppendHex dst dstOff n)
     buffer
 {-# INLINEABLE (&<|) #-}
+
+-- | Compute the number of nibbles that an integral type can hold, rounded up.
+maxHexLen ∷ (Integral a, FiniteBits a) ⇒ a → Int
+maxHexLen n = 1 + ((finiteBitSize n - 1) `shiftR` 2)
+{-# INLINEABLE maxHexLen #-}
 
 unsafeAppendHex ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
 unsafeAppendHex marr !off 0 =
@@ -101,9 +106,9 @@ dropNibble x = case (isSigned x, finiteBitSize x) of
   _ → shiftR x 4
 {-# INLINE dropNibble #-}
 
--- | This assumes n /= 0.
+-- | This assumes n /= 0. Round the number of nibbles up, as in 'maxHexLen'.
 lengthAsHex ∷ FiniteBits a ⇒ a → Int
-lengthAsHex n = (finiteBitSize n `shiftR` 2) - (countLeadingZeros n `shiftR` 2)
+lengthAsHex n = 1 + shiftR (finiteBitSize n - countLeadingZeros n - 1) 2
 {-# INLINEABLE lengthAsHex #-}
 
 writeNibbleAsHex ∷ A.MArray s → Int → Int → ST s ()
