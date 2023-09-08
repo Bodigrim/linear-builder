@@ -66,12 +66,12 @@ exactDecLen n
   where
     go ∷ (Integral a, FiniteBits a) ⇒ Int → a → Int
     go acc k
-      | finiteBitSize k >= if isSigned k then 31 else 30, k >= 1000000000 = go (acc + 9) (quotBillion k)
+      | finiteBitSize k >= if isSigned k then 31 else 30, k >= 1e9 = go (acc + 9) (quotBillion k)
       | otherwise = acc + goInt (fromIntegral k)
 
     goInt l@(I# l#)
-      | l >= 1e5 = 5 + I# (l# >=# 100000000#) + I# (l# >=# 10000000#) + I# (l# >=# 1000000#)
-      | otherwise = I# (l# >=# 10000#) + I# (l# >=# 1000#) + I# (l# >=# 100#) + I# (l# >=# 10#)
+      | l >= 1e5 = 5 + I# (l# >=# 100_000_000#) + I# (l# >=# 10_000_000#) + I# (l# >=# 1_000_000#)
+      | otherwise = I# (l# >=# 10_000#) + I# (l# >=# 1_000#) + I# (l# >=# 100#) + I# (l# >=# 10#)
 {-# INLINEABLE exactDecLen #-}
 
 unsafeAppendDec ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
@@ -82,7 +82,7 @@ unsafePrependDec ∷ ∀ s a. (Integral a, FiniteBits a) ⇒ A.MArray s → Int 
 unsafePrependDec marr !off n
   | n < 0
   , n == bit (finiteBitSize n - 1) = do
-      A.unsafeWrite marr (off - 1) (fromIntegral (48 + minBoundLastDigit n))
+      A.unsafeWrite marr (off - 1) (fromIntegral (0x30 + minBoundLastDigit n))
       go (off - 2) (abs (bit (finiteBitSize n - 1) `quot` 10)) >>= sign
   | n == 0 = do
       A.unsafeWrite marr (off - 1) 0x30 >> pure 1
@@ -101,7 +101,7 @@ unsafePrependDec marr !off n
           A.copyFromPointer marr (o - 1) (Ptr digits `plusPtr` (fromIntegral r `shiftL` 1)) 2
           if k < 100 then pure (o - 1) else go (o - 2) q
       | otherwise = do
-          A.unsafeWrite marr o (fromIntegral (48 + k))
+          A.unsafeWrite marr o (fromIntegral (0x30 + k))
           pure o
 
     digits ∷ Addr#
