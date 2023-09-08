@@ -5,7 +5,7 @@
 
 module Main where
 
-import Data.Bits (Bits(..), FiniteBits(..))
+import Data.Bits (Bits(..), FiniteBits(..), bitDefault)
 import Data.Foldable
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -159,7 +159,16 @@ newtype Int30 = Int30' Int
 
 pattern Int30 :: Int -> Int30
 pattern Int30 x <- Int30' x where
-  Int30 x = Int30' (x .&. ((1 `shiftL` 30) - 1))
+  Int30 x = Int30' x'
+    where
+    -- If the 30th bit is 1, then interpret the value as negative and fill the
+    -- bits from 30th position with 1s. Otherwise clear them to 0s.
+    x' = if testBit x 29
+      then x .|. m1
+      else x .&. m2
+    m1 = complement ((1 `shiftL` 29) - 1)
+    m2 = (1 `shiftL` 30) - 1
+
 {-# COMPLETE Int30 #-}
 
 instance Arbitrary Int30 where
@@ -167,8 +176,8 @@ instance Arbitrary Int30 where
   shrink (Int30 x) = Int30 <$> shrink x
 
 instance Bounded Int30 where
-  minBound = negate (1 `shiftL` 30)
-  maxBound = (1 `shiftL` 30) - 1
+  minBound = Int30 (negate (1 `shiftL` 29))
+  maxBound = Int30 ((1 `shiftL` 29) - 1)
 
 instance Num Int30 where
   Int30 x + Int30 y = Int30 (x + y)
@@ -179,17 +188,17 @@ instance Num Int30 where
   fromInteger x = Int30 (fromInteger x)
 
 instance Bits Int30 where
-  (.&.) = undefined
-  (.|.) = undefined
+  Int30 a .&. Int30 b = Int30 (a .&. b)
+  Int30 a .|. Int30 b = Int30 (a .|. b)
   xor = undefined
-  complement = undefined
+  complement (Int30 x) = Int30 (complement x)
   shift (Int30 x) i = Int30 (shift x i)
   rotate = undefined
   bitSize = const 30
   bitSizeMaybe = const (Just 30)
   isSigned = const True
-  testBit = undefined
-  bit = undefined
+  testBit (Int30 x) = testBit x
+  bit = bitDefault
   popCount = undefined
 
 instance FiniteBits Int30 where
