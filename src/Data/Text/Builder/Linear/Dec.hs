@@ -66,7 +66,7 @@ exactDecLen n
   where
     go ∷ (Integral a, FiniteBits a) ⇒ Int → a → Int
     go acc k
-      | finiteBitSize k >= 30, k >= 1000000000 = go (acc + 9) (quotBillion k)
+      | finiteBitSize k >= if isSigned k then 31 else 30, k >= 1000000000 = go (acc + 9) (quotBillion k)
       | otherwise = acc + goInt (fromIntegral k)
 
     goInt l@(I# l#)
@@ -108,8 +108,13 @@ unsafePrependDec marr !off n
     digits = "00010203040506070809101112131415161718192021222324252627282930313233343536373839404142434445464748495051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899"#
 {-# INLINEABLE unsafePrependDec #-}
 
+-- Compute rem minBound 10 efficiently. Given that:
+-- • minBound = 1 `shiftL` (finiteBitSize a - 1) = -2^(finiteBitSize a - 1)
+-- • the last digit of 2^k forms a cycle for k≥1: 2,4,8,6
+-- Then it is enough to pattern-match rem (finiteBitSize a) 4,
+-- i.e. finiteBitSize a .&. 3
 minBoundLastDigit ∷ FiniteBits a ⇒ a → Int
-minBoundLastDigit a = case finiteBitSize a .&. 4 of
+minBoundLastDigit a = case finiteBitSize a .&. 3 of
   0 → 8
   1 → 6
   2 → 2
