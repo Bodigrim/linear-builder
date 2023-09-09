@@ -49,8 +49,10 @@ data Action
   | PrependChar Char
   | HexInt Int8 Int16 (IntN 30) (IntN 31) Int32 (IntN 33) Int64
   | HexWord Word8 Word16 Word32 Word64
-  | AppendHex SomeIntN
-  | PrependHex SomeIntN
+  | AppendHexI SomeIntN
+  | PrependHexI SomeIntN
+  | AppendHexW SomeWordN
+  | PrependHexW SomeWordN
   | DecInt Int8 Int16 (IntN 30) (IntN 31) Int32 (IntN 33) Int64
   | DecWord Word8 Word16 (WordN 30) (WordN 31) Word32 (WordN 33) Word64
   | AppendDecW Word
@@ -71,8 +73,10 @@ instance Arbitrary Action where
     , PrependText   <$> arbitrary
     , AppendChar    <$> arbitraryUnicodeChar
     , PrependChar   <$> arbitraryUnicodeChar
-    , AppendHex     <$> arbitrary
-    , PrependHex    <$> arbitrary
+    , AppendHexI    <$> arbitrary
+    , PrependHexI   <$> arbitrary
+    , AppendHexW    <$> arbitrary
+    , PrependHexW   <$> arbitrary
     , AppendDecW    <$> arbitraryBoundedIntegral
     , PrependDecW   <$> arbitraryBoundedIntegral
     , AppendDecI    <$> arbitraryBoundedIntegral
@@ -107,20 +111,22 @@ interpretOnText xs z = foldl' go z xs
     go b (HexInt r s t u v w x)
       = intersperseText
           [ hexadecimal (fromIntegral @Int16 @Word16 s)
-          , hexadecimal'' t
+          , hexadecimalI t
           , hexadecimal (fromIntegral @Int64 @Word64 x) ]
       <> b
       <> intersperseText
           [ hexadecimal (fromIntegral @Int8 @Word8 r)
-          , hexadecimal'' u
+          , hexadecimalI u
           , hexadecimal (fromIntegral @Int32 @Word32 v)
-          , hexadecimal'' w ]
+          , hexadecimalI w ]
     go b (HexWord u v w x)
       = intersperseText [hexadecimal u, hexadecimal x]
       <> b
       <> intersperseText [hexadecimal v, hexadecimal w ]
-    go b (AppendHex     x) = b <> toStrict (toLazyText (hexadecimal' x))
-    go b (PrependHex    x) = toStrict (toLazyText (hexadecimal' x)) <> b
+    go b (AppendHexI    x) = b <> toStrict (toLazyText (hexadecimalSI x))
+    go b (PrependHexI   x) = toStrict (toLazyText (hexadecimalSI x)) <> b
+    go b (AppendHexW    x) = b <> toStrict (toLazyText (hexadecimalSW x))
+    go b (PrependHexW   x) = toStrict (toLazyText (hexadecimalSW x)) <> b
     go b (DecInt r s t u v w x)
                            = intersperseText [decimal s, decimal t, decimal x]
                            <> b
@@ -140,10 +146,17 @@ interpretOnText xs z = foldl' go z xs
     go b (AppendSpaces  n) = b <> T.replicate (fromIntegral n) (T.singleton ' ')
     go b (PrependSpaces n) = T.replicate (fromIntegral n) (T.singleton ' ') <> b
 
-    hexadecimal' (SomeIntN x) = hexadecimal'' x
+    hexadecimalSI (SomeIntN x) = hexadecimalI x
 
-    hexadecimal'' ∷ (KnownNat n) ⇒ IntN n → TB.Builder
-    hexadecimal'' x = if x >= 0
+    hexadecimalI ∷ (KnownNat n) ⇒ IntN n → TB.Builder
+    hexadecimalI x = if x >= 0
+      then hexadecimal x
+      else hexadecimal (fromIntegral @_ @Word64 x .&. (shiftL 1 (intSize x) - 1))
+
+    hexadecimalSW (SomeWordN x) = hexadecimalW x
+
+    hexadecimalW ∷ (KnownNat n) ⇒ WordN n → TB.Builder
+    hexadecimalW x = if x >= 0
       then hexadecimal x
       else hexadecimal (fromIntegral @_ @Word64 x .&. (shiftL 1 (intSize x) - 1))
 
@@ -162,8 +175,10 @@ interpretOnBuffer xs z = foldlIntoBuffer go z xs
     go b (HexInt r s t u v w x) = s &<| ";"# #<| t &<| ";"# #<| x &<|
                                   (b |>& r |># ";"# |>& u |># ";"# |>& v |># ";"# |>& w)
     go b (HexWord u v w x) = u &<| ";"# #<| x &<| (b |>& v |># ";"# |>& w)
-    go b (AppendHex     x) = case x of {SomeIntN i → b |>& i}
-    go b (PrependHex    x) = case x of {SomeIntN i → i &<| b}
+    go b (AppendHexI     x) = case x of {SomeIntN i → b |>& i}
+    go b (PrependHexI    x) = case x of {SomeIntN i → i &<| b}
+    go b (AppendHexW     x) = case x of {SomeWordN i → b |>& i}
+    go b (PrependHexW    x) = case x of {SomeWordN i → i &<| b}
     go b (DecInt  r s t u v w x) = s $<| ";"# #<| t $<| ";"# #<| x $<| (b |>$ r |># ";"# |>$ u |># ";"# |>$ v |># ";"# |>$ w)
     go b (DecWord r s t u v w x) = s $<| ";"# #<| t $<| ";"# #<| x $<| (b |>$ r |># ";"# |>$ u |># ";"# |>$ v |># ";"# |>$ w)
     go b (AppendDecW     x) = b |>$ x
@@ -312,9 +327,13 @@ instance Arbitrary SomeIntN where
 -- WordN
 --------------------------------------------------------------------------------
 
-newtype WordN (n ∷ Natural) = WordN' Word64
-  deriving stock (Eq, Ord, Show)
+newtype WordN (n ∷ Natural) = WordN' { unWordN :: Word64 }
+  deriving stock (Eq, Ord)
   deriving newtype (Enum, Real, Integral)
+
+instance (KnownNat n) ⇒ Show (WordN n) where
+  showsPrec p (WordN x) = showParen (p > 10)
+    (\s → mconcat ["WordN @", show (natVal (Proxy @n)), " ", show x, s])
 
 pattern WordN ∷ forall n. (KnownNat n) => Word64 → WordN n
 pattern WordN x ← WordN' x where
@@ -323,7 +342,8 @@ pattern WordN x ← WordN' x where
 {-# COMPLETE WordN #-}
 
 instance (KnownNat n) => Arbitrary (WordN n) where
-  arbitrary = WordN <$> arbitrary
+  arbitrary =
+    WordN <$> chooseBoundedIntegral (unWordN @n minBound, unWordN @n maxBound)
   shrink = shrinkIntegral
 
 instance (KnownNat n) => Bounded (WordN n) where
@@ -354,3 +374,30 @@ instance (KnownNat n) => Bits (WordN n) where
 
 instance (KnownNat n) => FiniteBits (WordN n) where
   finiteBitSize = const (intSize (Proxy @n))
+
+data SomeWordN = forall n. (KnownNat n) ⇒ SomeWordN (WordN n)
+
+instance Eq SomeWordN where
+  SomeWordN (WordN @n1 i1) == SomeWordN (WordN @n2 i2) =
+    case sameNat (Proxy @n1) (Proxy @n2) of
+      Just _  → i1 == i2
+      Nothing → False
+
+instance Ord SomeWordN where
+  SomeWordN (WordN @n1 i1) `compare` SomeWordN (WordN @n2 i2) =
+    case cmpNat (Proxy @n1) (Proxy @n2) of
+      LTI → LT
+      EQI → compare i1 i2
+      GTI → GT
+
+instance Show SomeWordN where
+  show (SomeWordN i) = show i
+
+instance Arbitrary SomeWordN where
+  arbitrary = do
+    s <- chooseInt (8, 64)
+    case someNatVal (toInteger s) of
+      Just (SomeNat (Proxy ∷ Proxy n)) →
+        SomeWordN <$> arbitraryBoundedIntegral @(WordN n)
+      Nothing → error "impossible"
+  shrink (SomeWordN i) = SomeWordN <$> shrinkIntegral i
