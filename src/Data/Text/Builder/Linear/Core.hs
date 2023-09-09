@@ -125,7 +125,7 @@ memptyPinned = runST $ do
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
 -- >>> import Data.Text.Builder.Linear.Buffer
--- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> runBuffer (\b -> case dupBuffer b of (# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar"))
 -- "foobar"
 --
 -- Note the unboxed tuple: 'Buffer' is an unlifted datatype,
@@ -157,9 +157,9 @@ byteSizeOfBuffer (Buffer t@(Text _ _ len)) = (# Buffer t, fromIntegral len #)
 -- import Data.Unrestricted.Linear
 --
 -- dropEndBuffer :: Word -> Buffer %1 -> Buffer
--- dropEndBuffer n buf =
---   (\\(# buf', len #) -> case move len of Ur len' -> takeBuffer (len' - n) buf')
---     (lengthOfBuffer buf)
+-- dropEndBuffer n buf = case lengthOfBuffer buf of
+--   (# buf', len #) -> case move len of
+--     Ur len' -> takeBuffer (len' - n) buf'
 -- @
 lengthOfBuffer ∷ Buffer ⊸ (# Buffer, Word #)
 lengthOfBuffer (Buffer t) = (# Buffer t, fromIntegral (T.length t) #)
@@ -278,7 +278,7 @@ isPinned (A.ByteArray a) = isTrue# (isByteArrayPinned# a)
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
 -- >>> import Data.Text.Builder.Linear.Buffer
--- >>> runBuffer (\b -> (\(# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar")) (dupBuffer b))
+-- >>> runBuffer (\b -> case dupBuffer b of (# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar"))
 -- "foobar"
 (><) ∷ Buffer ⊸ Buffer ⊸ Buffer
 
