@@ -47,6 +47,11 @@ data Action
   | PrependText Text
   | AppendChar Char
   | PrependChar Char
+  | AppendChars Word Char
+  | PrependChars Word Char
+  | JustifyLeft Word Char
+  | JustifyRight Word Char
+  | Center Word Char
   | HexInt Int8 Int16 (IntN 30) (IntN 31) Int32 (IntN 33) Int64
   | HexWord Word8 Word16 Word32 Word64
   | AppendHexI SomeIntN
@@ -73,6 +78,11 @@ instance Arbitrary Action where
     , PrependText   <$> arbitrary
     , AppendChar    <$> arbitraryUnicodeChar
     , PrependChar   <$> arbitraryUnicodeChar
+    , AppendChars   <$> arbitraryCharCount <*> arbitraryUnicodeChar
+    , PrependChars  <$> arbitraryCharCount <*> arbitraryUnicodeChar
+    , JustifyLeft   <$> arbitraryTotalLength <*> arbitraryUnicodeChar
+    , JustifyRight  <$> arbitraryTotalLength <*> arbitraryUnicodeChar
+    , Center        <$> arbitraryTotalLength <*> arbitraryUnicodeChar
     , AppendHexI    <$> arbitrary
     , PrependHexI   <$> arbitrary
     , AppendHexW    <$> arbitrary
@@ -98,16 +108,25 @@ instance Arbitrary Action where
     , AppendSpaces . getNonNegative <$> arbitrary
     , PrependSpaces . getNonNegative <$> arbitrary
     ]
+    where
+      arbitraryCharCount = chooseBoundedIntegral (0, 6)
+      arbitraryTotalLength = chooseBoundedIntegral (3, 20)
+
   shrink = genericShrink
 
 interpretOnText ∷ [Action] → Text → Text
 interpretOnText xs z = foldl' go z xs
   where
     go ∷ Text → Action → Text
-    go b (AppendText    x) = b <> x
-    go b (PrependText   x) = x <> b
-    go b (AppendChar    x) = T.snoc b x
-    go b (PrependChar   x) = T.cons x b
+    go b (AppendText     x) = b <> x
+    go b (PrependText    x) = x <> b
+    go b (AppendChar     x) = T.snoc b x
+    go b (PrependChar    x) = T.cons x b
+    go b (AppendChars  n x) = b <> T.replicate (fromIntegral n) (T.singleton x)
+    go b (PrependChars n x) = T.replicate (fromIntegral n) (T.singleton x) <> b
+    go b (JustifyLeft  n x) = T.justifyLeft  (fromIntegral n) x b
+    go b (JustifyRight n x) = T.justifyRight (fromIntegral n) x b
+    go b (Center       n x) = T.center (fromIntegral n) x b
     go b (HexInt r s t u v w x)
       = intersperseText
           [ hexadecimal (fromIntegral @Int16 @Word16 s)
@@ -172,6 +191,11 @@ interpretOnBuffer xs z = foldlIntoBuffer go z xs
     go b (PrependText    x) = x <| b
     go b (AppendChar     x) = b |>. x
     go b (PrependChar    x) = x .<| b
+    go b (AppendChars   n x) = appendChars n x b
+    go b (PrependChars  n x) = prependChars n x b
+    go b (JustifyLeft   n x) = justifyLeft n x b
+    go b (JustifyRight  n x) = justifyRight n x b
+    go b (Center        n x) = center n x b
     go b (HexInt r s t u v w x) = s &<| ";"# #<| t &<| ";"# #<| x &<|
                                   (b |>& r |># ";"# |>& u |># ";"# |>& v |># ";"# |>& w)
     go b (HexWord u v w x) = u &<| ";"# #<| x &<| (b |>& v |># ";"# |>& w)
