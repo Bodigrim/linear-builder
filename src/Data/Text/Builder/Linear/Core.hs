@@ -18,6 +18,7 @@ module Data.Text.Builder.Linear.Core (
   lengthOfBuffer,
   dropBuffer,
   takeBuffer,
+  newEmptyBuffer,
 
   -- * Text concatenation
   appendBounded,
@@ -111,6 +112,16 @@ memptyPinned = runST $ do
   marr ← A.newPinned 0
   arr ← A.unsafeFreeze marr
   pure $ Text arr 0 0
+
+-- | Create an empty 'Buffer'.
+--
+-- The first 'Buffer' is the input and the second is a new empty 'Buffer'.
+--
+-- Note: a previous buffer is necessary in order to create an empty buffer with
+-- the same characteristics.
+newEmptyBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
+newEmptyBuffer (Buffer t@(Text arr _ _)) =
+  (# Buffer t, Buffer (if isPinned arr then memptyPinned else mempty) #)
 
 -- | Duplicate builder. Feel free to process results in parallel threads.
 -- Similar to
