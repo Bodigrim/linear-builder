@@ -63,7 +63,7 @@ test-suite linear-builder-tests
         base,
         text,
         text-builder-linear,
-        tasty >=1.4 && <1.5,
+        tasty >=1.4 && <1.6,
         tasty-quickcheck >=0.10 && <0.11
 
 benchmark linear-builder-bench
