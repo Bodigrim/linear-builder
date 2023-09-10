@@ -23,6 +23,10 @@ module Data.Text.Builder.Linear.Buffer (
 
   -- * Multiple characters
 
+  -- ** Character replication
+  prependChars,
+  appendChars,
+
   -- ** Text
   (|>),
   (<|),
@@ -33,6 +37,11 @@ module Data.Text.Builder.Linear.Buffer (
   (|>#),
   ( #<| ), -- NOTE: extra spaces required because of -XUnboxedTuples
   (<|#),
+
+  -- * Padding
+  justifyLeft,
+  justifyRight,
+  center,
 
   -- * Number formatting
 

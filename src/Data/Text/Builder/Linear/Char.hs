@@ -3,17 +3,33 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 module Data.Text.Builder.Linear.Char (
-  -- * Buffer
+  -- * Single character
   (|>.),
   (.<|),
+
+  -- * Multiple characters
+  prependChars,
+  appendChars,
+
+  -- * Padding
+  justifyLeft,
+  justifyRight,
+  center,
 ) where
 
+import Data.Char (isAscii)
 import Data.Text.Array qualified as A
 import Data.Text.Internal.Encoding.Utf8 (ord2, ord3, ord4, utf8Length)
 import Data.Text.Internal.Unsafe.Char (ord, unsafeWrite)
 import GHC.ST (ST)
+import Unsafe.Coerce (unsafeCoerce)
 
+import Data.Text.Builder.Linear.Array (unsafeReplicate, unsafeTile)
 import Data.Text.Builder.Linear.Core
+
+--------------------------------------------------------------------------------
+-- Single char
+--------------------------------------------------------------------------------
 
 -- | Append 'Char' to a 'Buffer' by mutating it.
 --
@@ -74,3 +90,112 @@ unsafePrependCharM marr off c = case utf8Length c of
     A.unsafeWrite marr (off - 2) n2
     A.unsafeWrite marr (off - 1) n3
     pure 4
+
+--------------------------------------------------------------------------------
+-- Multiple chars
+--------------------------------------------------------------------------------
+
+-- | Prepend a given count of a 'Char' to a 'Buffer'.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> prependChars 3 'x' (b |>. 'A'))
+-- "xxxA"
+prependChars ∷ Word → Char → Buffer ⊸ Buffer
+prependChars count ch buff
+  | count == 0 = buff
+  | isAscii ch =
+      prependExact
+        (fromIntegral count)
+        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (ord ch))
+        buff
+  | otherwise =
+      case utf8Length ch of
+        cLen → case cLen * fromIntegral count of
+          totalLen →
+            prependExact
+              totalLen
+              (\dst dstOff → unsafeWrite dst dstOff ch *> unsafeTile dst dstOff totalLen cLen)
+              buff
+
+-- | Apppend a given count of a 'Char' to a 'Buffer'.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> appendChars 3 'x' (b |>. 'A'))
+-- "Axxx"
+appendChars ∷ Word → Char → Buffer ⊸ Buffer
+appendChars count ch buff
+  | count == 0 = buff
+  | isAscii ch =
+      appendExact
+        (fromIntegral count)
+        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (ord ch))
+        buff
+  | otherwise =
+      case utf8Length ch of
+        cLen → case cLen * fromIntegral count of
+          totalLen →
+            appendExact
+              totalLen
+              (\dst dstOff → unsafeWrite dst dstOff ch *> unsafeTile dst dstOff totalLen cLen)
+              buff
+
+--------------------------------------------------------------------------------
+-- Padding
+--------------------------------------------------------------------------------
+
+-- | Pad a builder from the /left/ side to the specified length with the specified
+-- character.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> justifyRight 10 'x' (appendChars 3 'A' b))
+-- "xxxxxxxAAA"
+-- >>> runBuffer (\b -> justifyRight 5 'x' (appendChars 6 'A' b))
+-- "AAAAAA"
+justifyRight ∷ Word → Char → Buffer ⊸ Buffer
+justifyRight n ch buff = case lengthOfBuffer buff of
+  (# buff', len #) →
+    toLinearWord
+      (\l b → if n <= l then b else prependChars (n - l) ch b)
+      len
+      buff'
+
+-- | Pad a builder from the /right/ side to the specified length with the specified
+-- character.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> justifyLeft 10 'x' (appendChars 3 'A' b))
+-- "AAAxxxxxxx"
+-- >>> runBuffer (\b -> justifyLeft 5 'x' (appendChars 6 'A' b))
+-- "AAAAAA"
+justifyLeft ∷ Word → Char → Buffer ⊸ Buffer
+justifyLeft n ch buff = case lengthOfBuffer buff of
+  (# buff', len #) →
+    toLinearWord
+      (\l b → if n <= l then b else appendChars (n - l) ch b)
+      len
+      buff'
+
+-- | Center a builder to the specified length with the specified character.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> center 10 'x' (appendChars 3 'A' b))
+-- "xxxxAAAxxx"
+-- >>> runBuffer (\b -> center 5 'x' (appendChars 6 'A' b))
+-- "AAAAAA"
+center ∷ Word → Char → Buffer ⊸ Buffer
+center n ch buff = case lengthOfBuffer buff of
+  (# buff', len #) →
+    toLinearWord
+      ( \l b →
+          if n <= l
+            then b
+            else case n - l of
+              !d → case d `quot` 2 of
+                !r → appendChars r ch (prependChars (d - r) ch b)
+      )
+      len
+      buff'
+
+-- Despite the use of unsafeCoerce, this is safe.
+toLinearWord ∷ (Word → a) → (Word ⊸ a)
+toLinearWord = unsafeCoerce

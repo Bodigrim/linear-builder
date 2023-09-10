@@ -30,6 +30,7 @@ library
 
     hs-source-dirs:     src
     other-modules:
+        Data.Text.Builder.Linear.Array
         Data.Text.Builder.Linear.Char
         Data.Text.Builder.Linear.Dec
         Data.Text.Builder.Linear.Double

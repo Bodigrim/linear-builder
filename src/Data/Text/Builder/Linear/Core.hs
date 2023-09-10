@@ -31,9 +31,11 @@ import Data.ByteString.Internal (ByteString (..))
 import Data.Text qualified as T
 import Data.Text.Array qualified as A
 import Data.Text.Internal (Text (..))
-import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, isByteArrayPinned#, isTrue#, plusAddr#, sizeofByteArray#, unsafeCoerce#)
+import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, plusAddr#, unsafeCoerce#)
 import GHC.ForeignPtr (ForeignPtr (..), ForeignPtrContents (..))
 import GHC.ST (ST (..), runST)
+
+import Data.Text.Builder.Linear.Array
 
 -- | Internally 'Buffer' is a mutable buffer.
 -- If a client gets hold of a variable of type 'Buffer',
@@ -261,16 +263,6 @@ prependExact srcLen appender =
     (\dst dstOff → appender dst (dstOff - srcLen) >> pure srcLen)
     (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE prependExact #-}
-
-unsafeThaw ∷ A.Array → ST s (A.MArray s)
-unsafeThaw (A.ByteArray a) = ST $ \s# →
-  (# s#, A.MutableByteArray (unsafeCoerce# a) #)
-
-sizeofByteArray ∷ A.Array → Int
-sizeofByteArray (A.ByteArray a) = I# (sizeofByteArray# a)
-
-isPinned ∷ A.Array → Bool
-isPinned (A.ByteArray a) = isTrue# (isByteArrayPinned# a)
 
 -- | Concatenate two 'Buffer's, potentially mutating both of them.
 --
