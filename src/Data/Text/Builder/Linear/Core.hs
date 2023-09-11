@@ -1,5 +1,6 @@
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
+--              (c) 2023 Pierre Le Marre
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
@@ -116,6 +117,24 @@ memptyPinned = runST $ do
 -- | Create an empty 'Buffer'.
 --
 -- The first 'Buffer' is the input and the second is a new empty 'Buffer'.
+--
+-- This function is needed in some situations, e.g. with
+-- 'Data.Text.Builder.Linear.Buffer.justifyRight'. The following example creates
+-- a utility function that justify a text and then append it to a buffer.
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
+-- >>> import Data.Text.Builder.Linear.Buffer
+-- >>> import Data.Text (Text)
+-- >>> :{
+-- appendJustified :: Buffer %1 -> Text -> Buffer
+-- appendJustified b t = case newEmptyBuffer b of
+--   -- Note that we need to create a new buffer from the text, in order
+--   -- to justify only the text and not the input buffer.
+--   (# b', empty #) -> b' >< justifyRight 12 ' ' (empty |> t)
+-- :}
+--
+-- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "foo" `appendJustified` "bar")
+-- "Test:         foo         bar"
 --
 -- Note: a previous buffer is necessary in order to create an empty buffer with
 -- the same characteristics.

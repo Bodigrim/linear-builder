@@ -103,18 +103,16 @@ unsafePrependCharM marr off c = case utf8Length c of
 prependChars ∷ Word → Char → Buffer ⊸ Buffer
 prependChars count ch buff
   | count == 0 = buff
-  | isAscii ch =
-      prependExact
-        (fromIntegral count)
-        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (ord ch))
-        buff
   | otherwise =
       case utf8Length ch of
         cLen → case cLen * fromIntegral count of
           totalLen →
             prependExact
               totalLen
-              (\dst dstOff → unsafeWrite dst dstOff ch *> unsafeTile dst dstOff totalLen cLen)
+              ( if isAscii ch
+                  then \dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (ord ch)
+                  else \dst dstOff → unsafeWrite dst dstOff ch *> unsafeTile dst dstOff totalLen cLen
+              )
               buff
 
 -- | Apppend a given count of a 'Char' to a 'Buffer'.
@@ -125,18 +123,16 @@ prependChars count ch buff
 appendChars ∷ Word → Char → Buffer ⊸ Buffer
 appendChars count ch buff
   | count == 0 = buff
-  | isAscii ch =
-      appendExact
-        (fromIntegral count)
-        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (ord ch))
-        buff
   | otherwise =
       case utf8Length ch of
         cLen → case cLen * fromIntegral count of
           totalLen →
             appendExact
               totalLen
-              (\dst dstOff → unsafeWrite dst dstOff ch *> unsafeTile dst dstOff totalLen cLen)
+              ( if isAscii ch
+                  then \dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (ord ch)
+                  else \dst dstOff → unsafeWrite dst dstOff ch *> unsafeTile dst dstOff totalLen cLen
+              )
               buff
 
 --------------------------------------------------------------------------------
@@ -151,6 +147,23 @@ appendChars count ch buff
 -- "xxxxxxxAAA"
 -- >>> runBuffer (\b -> justifyRight 5 'x' (appendChars 6 'A' b))
 -- "AAAAAA"
+--
+-- Note that 'newEmptyBuffer' is needed in some situations. The following example creates
+-- a utility function that justify a text and then append it to a buffer.
+--
+-- >>> :set -XOverloadedStrings -XLinearTypes -XUnboxedTuples
+-- >>> import Data.Text.Builder.Linear.Buffer
+-- >>> import Data.Text (Text)
+-- >>> :{
+-- appendJustified :: Buffer %1 -> Text -> Buffer
+-- appendJustified b t = case newEmptyBuffer b of
+--   -- Note that we need to create a new buffer from the text, in order
+--   -- to justify only the text and not the input buffer.
+--   (# b', empty #) -> b' >< justifyRight 12 ' ' (empty |> t)
+-- :}
+--
+-- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "foo" `appendJustified` "bar")
+-- "Test:         foo         bar"
 justifyRight ∷ Word → Char → Buffer ⊸ Buffer
 justifyRight n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →
@@ -167,6 +180,9 @@ justifyRight n ch buff = case lengthOfBuffer buff of
 -- "AAAxxxxxxx"
 -- >>> runBuffer (\b -> justifyLeft 5 'x' (appendChars 6 'A' b))
 -- "AAAAAA"
+--
+-- Note that 'newEmptyBuffer' is needed in some situations. See 'justifyRight'
+-- for an example.
 justifyLeft ∷ Word → Char → Buffer ⊸ Buffer
 justifyLeft n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →
@@ -182,6 +198,9 @@ justifyLeft n ch buff = case lengthOfBuffer buff of
 -- "xxxxAAAxxx"
 -- >>> runBuffer (\b -> center 5 'x' (appendChars 6 'A' b))
 -- "AAAAAA"
+--
+-- Note that 'newEmptyBuffer' is needed in some situations. See 'justifyRight'
+-- for an example.
 center ∷ Word → Char → Buffer ⊸ Buffer
 center n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →
