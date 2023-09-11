@@ -1,5 +1,6 @@
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
+--              (c) 2023 Pierre Le Marre
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
@@ -15,6 +16,7 @@ module Data.Text.Builder.Linear.Buffer (
   consumeBuffer,
   eraseBuffer,
   foldlIntoBuffer,
+  newEmptyBuffer,
   (><),
 
   -- * Single character
