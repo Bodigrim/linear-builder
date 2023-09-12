@@ -32,6 +32,7 @@ library
     other-modules:
         Data.Text.Builder.Linear.Array
         Data.Text.Builder.Linear.Char
+        Data.Text.Builder.Linear.Char.ASCII
         Data.Text.Builder.Linear.Dec
         Data.Text.Builder.Linear.Double
         Data.Text.Builder.Linear.Hex
@@ -72,6 +73,7 @@ benchmark linear-builder-bench
     main-is:            Main.hs
     hs-source-dirs:     bench
     other-modules:
+        BenchAsciiChar
         BenchChar
         BenchDecimal
         BenchDouble

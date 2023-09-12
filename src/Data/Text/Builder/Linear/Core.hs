@@ -21,6 +21,10 @@ module Data.Text.Builder.Linear.Core (
   takeBuffer,
   newEmptyBuffer,
 
+  -- * Single character
+  (|>@),
+  (@<|),
+
   -- * Text concatenation
   appendBounded,
   appendExact,
@@ -33,6 +37,7 @@ import Data.ByteString.Internal (ByteString (..))
 import Data.Text qualified as T
 import Data.Text.Array qualified as A
 import Data.Text.Internal (Text (..))
+import Data.Word (Word8)
 import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, plusAddr#, unsafeCoerce#)
 import GHC.ForeignPtr (ForeignPtr (..), ForeignPtrContents (..))
 import GHC.ST (ST (..), runST)
@@ -212,6 +217,32 @@ takeBuffer nChar (Buffer t@(Text arr off _))
   where
     nByte = T.measureOff (fromIntegral nChar) t
 
+-- | Append an ASCII char as 'Word8' to a 'Buffer' by mutating it.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> b |>@ 49 |>@ 43 |>@ 50 )
+-- "1+2"
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to ensure that the 'Word8' is a valid ASCII character.
+(|>@) ∷ Buffer ⊸ Word8 → Buffer
+
+infixl 6 |>@
+Buffer (Text dst dstOff dstLen) |>@ ch = Buffer $ runST $ do
+  let dstFullLen = sizeofByteArray dst
+      newFullLen = dstOff + 2 * (dstLen + 1)
+  newM ←
+    if dstOff + dstLen < dstFullLen
+      then unsafeThaw dst
+      else do
+        tmpM ← (if isPinned dst then A.newPinned else A.new) newFullLen
+        A.copyI dstLen tmpM dstOff dst dstOff
+        pure tmpM
+  A.unsafeWrite newM (dstOff + dstLen) ch
+  new ← A.unsafeFreeze newM
+  pure $ Text new dstOff (dstLen + 1)
+{-# INLINE (|>@) #-}
+
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
 appendBounded
   ∷ Int
@@ -237,6 +268,8 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
 {-# INLINE appendBounded #-}
 
 -- | Low-level routine to append data of known size to a 'Buffer'.
+--
+-- Prefer the optimized '(|>@)' if the size is 1.
 appendExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
@@ -249,6 +282,34 @@ appendExact srcLen appender =
     srcLen
     (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE appendExact #-}
+
+-- | Prepend an ASCII char as 'Word8' to a 'Buffer' by mutating it.
+--
+-- >>> :set -XLinearTypes
+-- >>> runBuffer (\b -> 49 @<| 43 @<| 50 @<| b )
+-- "1+2"
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to ensure that the 'Word8' is a valid ASCII character.
+(@<|) ∷ Word8 → Buffer ⊸ Buffer
+
+infixr 6 @<|
+ch @<| Buffer (Text dst dstOff dstLen)
+  | 0 < dstOff = Buffer $ runST $ do
+      newM ← unsafeThaw dst
+      A.unsafeWrite newM (dstOff - 1) ch
+      new ← A.unsafeFreeze newM
+      pure $ Text new (dstOff - 1) (1 + dstLen)
+  | otherwise = Buffer $ runST $ do
+      let dstFullLen = sizeofByteArray dst
+          newOff = dstLen + 1
+          newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
+      newM ← (if isPinned dst then A.newPinned else A.new) newFullLen
+      A.unsafeWrite newM newOff ch
+      A.copyI dstLen newM (newOff + 1) dst dstOff
+      new ← A.unsafeFreeze newM
+      pure $ Text new newOff (dstLen + 1)
+{-# INLINE (@<|) #-}
 
 -- | Low-level routine to prepend data of unknown size to a 'Buffer'.
 prependBounded
@@ -280,6 +341,8 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
 {-# INLINE prependBounded #-}
 
 -- | Low-level routine to append data of known size to a 'Buffer'.
+--
+-- Prefer the optimized '(@<|)' if the size is 1.
 prependExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action

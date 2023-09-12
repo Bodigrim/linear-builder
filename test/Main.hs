@@ -17,6 +17,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Text.Builder.Linear.Buffer
 import Data.Text.Internal (Text(..))
+import Data.Text.Internal.Unsafe.Char (unsafeChr8)
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder qualified as TB
 import Data.Text.Lazy.Builder (toLazyText)
@@ -45,6 +46,13 @@ instance Arbitrary Text where
 data Action
   = AppendText Text
   | PrependText Text
+  | AppendChar8 Word8
+  | PrependChar8 Word8
+  | AppendChars8 Word Word8
+  | PrependChars8 Word Word8
+  | JustifyLeft8 Word Word8
+  | JustifyRight8 Word Word8
+  | Center8 Word Word8
   | AppendChar Char
   | PrependChar Char
   | AppendChars Word Char
@@ -76,6 +84,13 @@ instance Arbitrary Action where
   arbitrary = oneof
     [ AppendText    <$> arbitrary
     , PrependText   <$> arbitrary
+    , AppendChar8   <$> arbitraryAscii
+    , PrependChar8  <$> arbitraryAscii
+    , AppendChars8  <$> arbitraryCharCount <*> arbitraryAscii
+    , PrependChars8 <$> arbitraryCharCount <*> arbitraryAscii
+    , JustifyLeft8  <$> arbitraryTotalLength <*> arbitraryAscii
+    , JustifyRight8 <$> arbitraryTotalLength <*> arbitraryAscii
+    , Center8       <$> arbitraryTotalLength <*> arbitraryAscii
     , AppendChar    <$> arbitraryUnicodeChar
     , PrependChar   <$> arbitraryUnicodeChar
     , AppendChars   <$> arbitraryCharCount <*> arbitraryUnicodeChar
@@ -109,6 +124,7 @@ instance Arbitrary Action where
     , PrependSpaces . getNonNegative <$> arbitrary
     ]
     where
+      arbitraryAscii = chooseBoundedIntegral (1, 127)
       arbitraryCharCount = chooseBoundedIntegral (0, 6)
       arbitraryTotalLength = chooseBoundedIntegral (3, 20)
 
@@ -118,15 +134,22 @@ interpretOnText ∷ [Action] → Text → Text
 interpretOnText xs z = foldl' go z xs
   where
     go ∷ Text → Action → Text
-    go b (AppendText     x) = b <> x
-    go b (PrependText    x) = x <> b
-    go b (AppendChar     x) = T.snoc b x
-    go b (PrependChar    x) = T.cons x b
-    go b (AppendChars  n x) = b <> T.replicate (fromIntegral n) (T.singleton x)
-    go b (PrependChars n x) = T.replicate (fromIntegral n) (T.singleton x) <> b
-    go b (JustifyLeft  n x) = T.justifyLeft  (fromIntegral n) x b
-    go b (JustifyRight n x) = T.justifyRight (fromIntegral n) x b
-    go b (Center       n x) = T.center (fromIntegral n) x b
+    go b (AppendText      x) = b <> x
+    go b (PrependText     x) = x <> b
+    go b (AppendChar8     x) = T.snoc b (unsafeChr8 x)
+    go b (PrependChar8    x) = T.cons (unsafeChr8 x) b
+    go b (AppendChars8  n x) = b <> T.replicate (fromIntegral n) (T.singleton (unsafeChr8 x))
+    go b (PrependChars8 n x) = T.replicate (fromIntegral n) (T.singleton (unsafeChr8 x)) <> b
+    go b (JustifyLeft8  n x) = T.justifyLeft  (fromIntegral n) (unsafeChr8 x) b
+    go b (JustifyRight8 n x) = T.justifyRight (fromIntegral n) (unsafeChr8 x) b
+    go b (Center8       n x) = T.center (fromIntegral n) (unsafeChr8 x) b
+    go b (AppendChar      x) = T.snoc b x
+    go b (PrependChar     x) = T.cons x b
+    go b (AppendChars   n x) = b <> T.replicate (fromIntegral n) (T.singleton x)
+    go b (PrependChars  n x) = T.replicate (fromIntegral n) (T.singleton x) <> b
+    go b (JustifyLeft   n x) = T.justifyLeft  (fromIntegral n) x b
+    go b (JustifyRight  n x) = T.justifyRight (fromIntegral n) x b
+    go b (Center        n x) = T.center (fromIntegral n) x b
     go b (HexInt r s t u v w x)
       = intersperseText
           [ hexadecimal (fromIntegral @Int16 @Word16 s)
@@ -187,10 +210,17 @@ interpretOnBuffer ∷ [Action] → Buffer ⊸ Buffer
 interpretOnBuffer xs z = foldlIntoBuffer go z xs
   where
     go ∷ Buffer ⊸ Action → Buffer
-    go b (AppendText     x) = b |> x
-    go b (PrependText    x) = x <| b
-    go b (AppendChar     x) = b |>. x
-    go b (PrependChar    x) = x .<| b
+    go b (AppendText      x) = b |> x
+    go b (PrependText     x) = x <| b
+    go b (AppendChar8     x) = b |>@ x
+    go b (PrependChar8    x) = x @<| b
+    go b (AppendChars8  n x) = appendAsciiChars n x b
+    go b (PrependChars8 n x) = prependAsciiChars n x b
+    go b (JustifyLeft8  n x) = justifyLeftAscii n x b
+    go b (JustifyRight8 n x) = justifyRightAscii n x b
+    go b (Center8       n x) = centerAscii n x b
+    go b (AppendChar      x) = b |>. x
+    go b (PrependChar     x) = x .<| b
     go b (AppendChars   n x) = appendChars n x b
     go b (PrependChars  n x) = prependChars n x b
     go b (JustifyLeft   n x) = justifyLeft n x b

@@ -9,6 +9,7 @@ import Test.Tasty.Bench
 import Test.Tasty.Patterns.Printer
 
 import BenchChar
+import BenchAsciiChar
 import BenchDecimal
 import BenchDouble
 import BenchHexadecimal
@@ -17,6 +18,7 @@ import BenchText
 main ∷ IO ()
 main = defaultMain $ map (mapLeafBenchmarks addCompare) $
   [ benchText
+  , benchAsciiChar
   , benchChar
   , benchDecimal
   , benchHexadecimal

@@ -20,12 +20,24 @@ module Data.Text.Builder.Linear.Buffer (
   (><),
 
   -- * Single character
+
+  -- ** ASCII
+  (|>@),
+  (@<|),
+
+  -- ** Unicode
   (|>.),
   (.<|),
 
   -- * Multiple characters
 
   -- ** Character replication
+
+  -- *** ASCII
+  prependAsciiChars,
+  appendAsciiChars,
+
+  -- *** Unicode
   prependChars,
   appendChars,
 
@@ -41,6 +53,13 @@ module Data.Text.Builder.Linear.Buffer (
   (<|#),
 
   -- * Padding
+
+  -- *** ASCII
+  justifyLeftAscii,
+  justifyRightAscii,
+  centerAscii,
+
+  -- *** Unicode
   justifyLeft,
   justifyRight,
   center,
@@ -66,6 +85,7 @@ import GHC.Exts (Addr#, Int (..), Ptr (..), cstringLength#, setByteArray#)
 import GHC.ST (ST (..))
 
 import Data.Text.Builder.Linear.Char
+import Data.Text.Builder.Linear.Char.ASCII
 import Data.Text.Builder.Linear.Core
 import Data.Text.Builder.Linear.Dec
 import Data.Text.Builder.Linear.Double

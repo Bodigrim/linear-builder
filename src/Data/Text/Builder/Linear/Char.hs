@@ -37,6 +37,8 @@ import Data.Text.Builder.Linear.Core
 -- >>> runBuffer (\b -> b |>. 'q' |>. 'w')
 -- "qw"
 --
+-- Prefer '(|>@)' if the character is ASCII.
+--
 -- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
 -- responsibility of the caller to sanitize surrogate code points with
 -- 'Data.Text.Internal.safe'.
@@ -50,6 +52,8 @@ buffer |>. ch = appendBounded 4 (\dst dstOff → unsafeWrite dst dstOff ch) buff
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> 'q' .<| 'w' .<| b)
 -- "qw"
+--
+-- Prefer '(@<|)' if the character is ASCII.
 --
 -- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
 -- responsibility of the caller to sanitize surrogate code points with
