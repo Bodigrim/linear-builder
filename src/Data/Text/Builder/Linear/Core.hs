@@ -33,6 +33,7 @@ module Data.Text.Builder.Linear.Core (
   (><),
 ) where
 
+import Data.Bits (Bits (..))
 import Data.ByteString.Internal (ByteString (..))
 import Data.Text qualified as T
 import Data.Text.Array qualified as A
@@ -238,7 +239,7 @@ Buffer (Text dst dstOff dstLen) |>@ ch = Buffer $ runST $ do
         tmpM ← (if isPinned dst then A.newPinned else A.new) newFullLen
         A.copyI dstLen tmpM dstOff dst dstOff
         pure tmpM
-  A.unsafeWrite newM (dstOff + dstLen) ch
+  A.unsafeWrite newM (dstOff + dstLen) (ch .&. 0x7f)
   new ← A.unsafeFreeze newM
   pure $ Text new dstOff (dstLen + 1)
 {-# INLINE (|>@) #-}
@@ -297,7 +298,7 @@ infixr 6 @<|
 ch @<| Buffer (Text dst dstOff dstLen)
   | 0 < dstOff = Buffer $ runST $ do
       newM ← unsafeThaw dst
-      A.unsafeWrite newM (dstOff - 1) ch
+      A.unsafeWrite newM (dstOff - 1) (ch .&. 0x7f)
       new ← A.unsafeFreeze newM
       pure $ Text new (dstOff - 1) (1 + dstLen)
   | otherwise = Buffer $ runST $ do
@@ -305,7 +306,7 @@ ch @<| Buffer (Text dst dstOff dstLen)
           newOff = dstLen + 1
           newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
       newM ← (if isPinned dst then A.newPinned else A.new) newFullLen
-      A.unsafeWrite newM newOff ch
+      A.unsafeWrite newM newOff (ch .&. 0x7f)
       A.copyI dstLen newM (newOff + 1) dst dstOff
       new ← A.unsafeFreeze newM
       pure $ Text new newOff (dstLen + 1)

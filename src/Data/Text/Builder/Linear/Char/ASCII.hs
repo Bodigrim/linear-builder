@@ -13,6 +13,7 @@ module Data.Text.Builder.Linear.Char.ASCII (
   centerAscii,
 ) where
 
+import Data.Bits (Bits(..))
 import Data.Text.Builder.Linear.Array (unsafeReplicate)
 import Data.Text.Builder.Linear.Core
 import Data.Word (Word8)
@@ -36,7 +37,7 @@ prependAsciiChars count ch buff
   | otherwise =
       prependExact
         (fromIntegral count)
-        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (fromIntegral ch))
+        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (fromIntegral ch .&. 0x7f))
         buff
 
 -- | Append a given count of a ASCII 'Char' as 'Word8' to a 'Buffer'.
@@ -53,7 +54,7 @@ appendAsciiChars count ch buff
   | otherwise =
       appendExact
         (fromIntegral count)
-        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (fromIntegral ch))
+        (\dst dstOff → unsafeReplicate dst dstOff (fromIntegral count) (fromIntegral ch .&. 0x7f))
         buff
 
 --------------------------------------------------------------------------------
