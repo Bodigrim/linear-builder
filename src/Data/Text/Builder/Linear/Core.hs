@@ -229,19 +229,11 @@ takeBuffer nChar (Buffer t@(Text arr off _))
 (|>@) ∷ Buffer ⊸ Word8 → Buffer
 
 infixl 6 |>@
-Buffer (Text dst dstOff dstLen) |>@ ch = Buffer $ runST $ do
-  let dstFullLen = sizeofByteArray dst
-      newFullLen = dstOff + 2 * (dstLen + 1)
-  newM ←
-    if dstOff + dstLen < dstFullLen
-      then unsafeThaw dst
-      else do
-        tmpM ← (if isPinned dst then A.newPinned else A.new) newFullLen
-        A.copyI dstLen tmpM dstOff dst dstOff
-        pure tmpM
-  A.unsafeWrite newM (dstOff + dstLen) (ch .&. 0x7f)
-  new ← A.unsafeFreeze newM
-  pure $ Text new dstOff (dstLen + 1)
+b |>@ ch =
+  appendExact
+    1
+    (\dst dstOff → A.unsafeWrite dst dstOff (ch .&. 0x7f))
+    b
 {-# INLINE (|>@) #-}
 
 -- | Low-level routine to append data of unknown size to a 'Buffer'.
@@ -295,21 +287,11 @@ appendExact srcLen appender =
 (@<|) ∷ Word8 → Buffer ⊸ Buffer
 
 infixr 6 @<|
-ch @<| Buffer (Text dst dstOff dstLen)
-  | 0 < dstOff = Buffer $ runST $ do
-      newM ← unsafeThaw dst
-      A.unsafeWrite newM (dstOff - 1) (ch .&. 0x7f)
-      new ← A.unsafeFreeze newM
-      pure $ Text new (dstOff - 1) (1 + dstLen)
-  | otherwise = Buffer $ runST $ do
-      let dstFullLen = sizeofByteArray dst
-          newOff = dstLen + 1
-          newFullLen = 2 * newOff + (dstFullLen - dstOff - dstLen)
-      newM ← (if isPinned dst then A.newPinned else A.new) newFullLen
-      A.unsafeWrite newM newOff (ch .&. 0x7f)
-      A.copyI dstLen newM (newOff + 1) dst dstOff
-      new ← A.unsafeFreeze newM
-      pure $ Text new newOff (dstLen + 1)
+ch @<| b =
+  prependExact
+    1
+    (\dst dstOff → A.unsafeWrite dst dstOff (ch .&. 0x7f))
+    b
 {-# INLINE (@<|) #-}
 
 -- | Low-level routine to prepend data of unknown size to a 'Buffer'.
