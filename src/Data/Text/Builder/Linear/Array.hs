@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
 --              (c) 2023 Pierre Le Marre
@@ -14,12 +16,23 @@ module Data.Text.Builder.Linear.Array (
 ) where
 
 import Data.Text.Array qualified as A
-import GHC.Exts (Int (..), isByteArrayPinned#, isTrue#, setByteArray#, sizeofByteArray#, unsafeCoerce#)
+import GHC.Exts (Int (..), isByteArrayPinned#, isTrue#, setByteArray#, sizeofByteArray#)
 import GHC.ST (ST (..))
 
+#if __GLASGOW_HASKELL__ >= 909
+import GHC.Exts (unsafeThawByteArray#)
+#else
+import GHC.Exts (unsafeCoerce#)
+#endif
+
 unsafeThaw ∷ A.Array → ST s (A.MArray s)
+#if __GLASGOW_HASKELL__ >= 909
+unsafeThaw (A.ByteArray a) = ST $ \s# → case unsafeThawByteArray# a s# of
+  (# s'#, ma #) -> (# s'#, A.MutableByteArray ma #)
+#else
 unsafeThaw (A.ByteArray a) = ST $ \s# →
   (# s#, A.MutableByteArray (unsafeCoerce# a) #)
+#endif
 
 sizeofByteArray ∷ A.Array → Int
 sizeofByteArray (A.ByteArray a) = I# (sizeofByteArray# a)

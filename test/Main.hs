@@ -1,5 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE GADTs #-}
+#if __GLASGOW_HASKELL__ >= 907
+{-# LANGUAGE TypeAbstractions #-}
+#endif
 
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
@@ -8,8 +12,9 @@
 
 module Main where
 
+import Prelude hiding (Foldable(..))
 import Data.Bits (Bits(..), FiniteBits(..), bitDefault)
-import Data.Foldable
+import Data.Foldable (Foldable(..))
 import Data.Int
 import Data.List (intersperse)
 import Data.Proxy (Proxy(..))
