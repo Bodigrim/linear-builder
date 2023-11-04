@@ -223,6 +223,8 @@ main = defaultMain $ testGroup "All"
   , testProperty "append addr#" prop3
   , testProperty "prepend addr#" prop4
   , testProperty "bytestring builder" prop5
+  , testProperty "CSE 1" prop6
+  , testProperty "CSE 2" prop7
   ]
 
 prop1 ∷ [Action] → Property
@@ -255,6 +257,17 @@ prop4 acts = runBuffer f1 === runBuffer f2
 prop5 ∷ [Action] → Property
 prop5 acts = T.encodeUtf8 (interpretOnText acts mempty) ===
   runBufferBS (\b → interpretOnBuffer acts b)
+
+prop6 :: Property
+prop6 = T.pack "_a_b" ===
+  runBuffer (\buf -> buf |>. '_' |>. 'a' |>
+    runBuffer (\buf' -> buf' |>. '_' |>. 'b'))
+
+prop7 :: Property
+prop7 =
+    let !x = runBuffer (\buf -> (buf |>. '_' |>. 'a') |>… 5)
+        !y = runBuffer (\buf -> (buf |>. '_' |>. 'b') |>… 5)
+    in (x, y) === (T.pack "_a     ", T.pack "_b     ")
 
 --------------------------------------------------------------------------------
 -- IntN

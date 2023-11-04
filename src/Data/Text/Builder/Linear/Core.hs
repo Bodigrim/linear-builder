@@ -92,6 +92,15 @@ unBuffer (Buffer x) = x
 -- 'Text' and [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) 'Text' are equivalent.
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (shrinkBuffer (f (Buffer mempty)))
+{-# NOINLINE runBuffer #-}
+
+{-
+  See https://github.com/Bodigrim/linear-builder/issues/19
+  and https://github.com/tweag/linear-base/pull/187#discussion_r489081926
+  for the discussion why NOINLINE here and below in 'runBufferBS' is necessary.
+  Without it CSE (common subexpression elimination) can pull out 'Buffer's from
+  different 'runBuffer's and share them, which is absolutely not what we want.
+-}
 
 -- | Same as 'runBuffer', but returning a UTF-8 encoded strict 'ByteString'.
 runBufferBS ∷ (Buffer ⊸ Buffer) ⊸ ByteString
@@ -100,6 +109,7 @@ runBufferBS f = case shrinkBuffer (f (Buffer memptyPinned)) of
     where
       addr# = byteArrayContents# arr `plusAddr#` from
       fp = ForeignPtr addr# (PlainPtr (unsafeCoerce# arr))
+{-# NOINLINE runBufferBS #-}
 
 shrinkBuffer ∷ Buffer ⊸ Buffer
 shrinkBuffer (Buffer (Text arr from len)) = Buffer $ runST $ do
