@@ -48,8 +48,14 @@ module Data.Text.Builder.Linear.Buffer (
   -- * Number formatting
 
   -- ** Decimal
+
+  -- *** Bounded numbers
   (|>$),
   ($<|),
+
+  -- *** Unbounded numbers
+  (|>$$),
+  ($$<|),
 
   -- ** Hexadecimal
 
