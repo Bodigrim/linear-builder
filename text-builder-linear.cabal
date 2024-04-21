@@ -46,6 +46,7 @@ library
         base >=4.16 && <5,
         text >=2.0 && <2.2,
         bytestring >=0.11 && <0.13,
+        ghc-bignum >=1.1 && < 2.0,
         quote-quot >=0.2.1 && <0.3
 
 test-suite linear-builder-tests
