@@ -71,6 +71,8 @@ data Action
   | PrependDecI Int
   | AppendDecI30 (IntN 30)
   | PrependDecI30 (IntN 30)
+  | AppendDecInteger Integer
+  | PrependDecInteger Integer
   | AppendDouble Double
   | PrependDouble Double
   | AppendSpaces Word
@@ -98,6 +100,8 @@ instance Arbitrary Action where
     , PrependDecI   <$> arbitraryBoundedIntegral
     , AppendDecI30  <$> arbitraryBoundedIntegral
     , PrependDecI30 <$> arbitraryBoundedIntegral
+    , AppendDecInteger <$> arbitraryInteger
+    , PrependDecInteger <$> arbitraryInteger
     , pure $ HexWord minBound minBound minBound minBound
     , pure $ HexWord maxBound maxBound maxBound maxBound
     , pure $ HexInt minBound minBound minBound minBound minBound minBound minBound
@@ -116,6 +120,9 @@ instance Arbitrary Action where
     where
       arbitraryCharCount = chooseBoundedIntegral (0, 6)
       arbitraryTotalLength = chooseBoundedIntegral (3, 20)
+      arbitraryInteger = chooseInteger 
+        ( fromIntegral @Int minBound ^ (3 :: Word)
+        , fromIntegral @Int maxBound ^ (3 :: Word) )
 
   shrink = genericShrink
 
@@ -165,6 +172,8 @@ interpretOnText xs z = foldl' go z xs
     go b (PrependDecI   x) = toStrict (toLazyText (decimal x)) <> b
     go b (AppendDecI30  x) = b <> toStrict (toLazyText (decimal x))
     go b (PrependDecI30 x) = toStrict (toLazyText (decimal x)) <> b
+    go b (AppendDecInteger  x) = b <> toStrict (toLazyText (decimal x))
+    go b (PrependDecInteger x) = toStrict (toLazyText (decimal x)) <> b
     go b (AppendDouble  x) = b <> toStrict (toLazyText (realFloat x))
     go b (PrependDouble x) = toStrict (toLazyText (realFloat x)) <> b
     go b (AppendSpaces  n) = b <> T.replicate (fromIntegral n) (T.singleton ' ')
@@ -216,6 +225,8 @@ interpretOnBuffer xs z = foldlIntoBuffer go z xs
     go b (PrependDecI    x) = x $<| b
     go b (AppendDecI30   x) = b |>$ x
     go b (PrependDecI30  x) = x $<| b
+    go b (AppendDecInteger  x) = b |>$$ x
+    go b (PrependDecInteger x) = x $$<| b
     go b (AppendDouble   x) = b |>% x
     go b (PrependDouble  x) = x %<| b
     go b (AppendSpaces   n) = b |>… n
@@ -230,6 +241,7 @@ main = defaultMain $ testGroup "All"
   , testProperty "bytestring builder" prop5
   , testProperty "CSE 1" prop6
   , testProperty "CSE 2" prop7
+  , testProperty "unbounded integers" prop8
   ]
 
 prop1 ∷ [Action] → Property
@@ -274,6 +286,34 @@ prop7 =
         !y = runBuffer (\buf -> (buf |>. '_' |>. 'b') |>… 5)
     in (x, y) === (T.pack "_a     ", T.pack "_b     ")
 
+prop8 ∷ Property
+prop8 =
+  conjoin
+    [ check 0
+    , check 1e18
+    , check 1e19
+    , check 1e20
+    , check 1e50
+    , check 1e100
+    , check (10 ^ (400 ∷ Word))
+    , check (10 ^ (600 ∷ Word))
+    , check (10 ^ (1000 ∷ Word))
+    , check (toInteger @Word maxBound)
+    , check (toInteger @Word maxBound + 1)
+    , check (negate (toInteger @Word maxBound))
+    , check (negate (toInteger @Word maxBound + 1))
+    , check (toInteger @Word maxBound ^ (2 ∷ Word))
+    , check (toInteger @Word maxBound ^ (20 ∷ Word))
+    , check (toInteger @Word maxBound ^ (40 ∷ Word))
+    ]
+  where
+    check ∷ Integer → Property
+    check i =
+      decimalText i === runBuffer (i $$<|)
+        .&&.
+      decimalText i === runBuffer (|>$$ i)
+
+    decimalText = toStrict . toLazyText . decimal
 --------------------------------------------------------------------------------
 -- IntN
 --------------------------------------------------------------------------------

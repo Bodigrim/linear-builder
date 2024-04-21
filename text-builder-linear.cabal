@@ -55,7 +55,7 @@ test-suite linear-builder-tests
     hs-source-dirs:     test
     default-language:   GHC2021
     default-extensions:
-        DerivingStrategies LinearTypes MagicHash PatternSynonyms
+        DerivingStrategies LinearTypes MagicHash NumDecimals PatternSynonyms
         UnboxedTuples UnicodeSyntax
 
     ghc-options:
