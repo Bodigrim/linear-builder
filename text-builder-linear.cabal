@@ -75,6 +75,7 @@ benchmark linear-builder-bench
     other-modules:
         BenchChar
         BenchDecimal
+        BenchDecimalUnbounded
         BenchDouble
         BenchHexadecimal
         BenchText
