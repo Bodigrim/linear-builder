@@ -79,12 +79,13 @@ exactDecLen n
     go ∷ (Integral a, FiniteBits a) ⇒ Int → a → Int
     go acc k
       | finiteBitSize k >= if isSigned k then 31 else 30, k >= 1e9 = go (acc + 9) (quotBillion k)
-      | otherwise = acc + goInt (fromIntegral k)
-
-    goInt l@(I# l#)
-      | l >= 1e5 = 5 + I# (l# >=# 100_000_000#) + I# (l# >=# 10_000_000#) + I# (l# >=# 1_000_000#)
-      | otherwise = I# (l# >=# 10_000#) + I# (l# >=# 1_000#) + I# (l# >=# 100#) + I# (l# >=# 10#)
+      | otherwise = acc + exactIntDecLen (fromIntegral k)
 {-# INLINEABLE exactDecLen #-}
+
+exactIntDecLen ∷ Int → Int
+exactIntDecLen l@(I# l#)
+  | l >= 1e5 = 5 + I# (l# >=# 100_000_000#) + I# (l# >=# 10_000_000#) + I# (l# >=# 1_000_000#)
+  | otherwise = I# (l# >=# 10_000#) + I# (l# >=# 1_000#) + I# (l# >=# 100#) + I# (l# >=# 10#)
 
 unsafeAppendBoundedDec ∷ (Integral a, FiniteBits a) ⇒ A.MArray s → Int → a → ST s Int
 unsafeAppendBoundedDec marr off n = unsafePrependBoundedDec marr (off + exactDecLen n) n
@@ -223,8 +224,16 @@ maxIntegerDecLen a = case a of
 exactIntegerDecLen ∷ Integer → Int
 exactIntegerDecLen n = case n of
   I.IS i# → exactDecLen (I# i#)
-  I.IP n# → fromIntegral (BN.bigNatSizeInBase 10 n#)
-  I.IN n# → 1 + fromIntegral (BN.bigNatSizeInBase 10 n#)
+  I.IP n# → exactBigNatDecLen 1 n#
+  I.IN n# → exactBigNatDecLen 2 n#
+{-# INLINEABLE exactIntegerDecLen #-}
+
+exactBigNatDecLen ∷ Int → BN.BigNat# → Int
+exactBigNatDecLen = go
+  where
+    go !acc n# = case BN.bigNatCompareWord# n# 1_000_000_000## of
+      LT → acc + exactIntDecLen (BN.bigNatToInt n#)
+      _ → go (acc + 9) (BN.bigNatQuotWord# n# 1_000_000_000##)
 
 unsafeAppendUnboundedDec ∷ A.MArray s → Int → Integer → ST s Int
 unsafeAppendUnboundedDec marr off n = unsafePrependUnboundedDec marr (off + exactIntegerDecLen n) n
