@@ -98,7 +98,7 @@ fromChar x = Builder $ \b → b |>. x
 -- >>> fromAddr "foo"# <> fromAddr "bar"#
 -- "foobar"
 --
--- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
+-- The literal string must not contain zero bytes @\\NUL@ and must be a valid UTF-8,
 -- these conditions are not checked.
 fromAddr ∷ Addr# → Builder
 fromAddr x = Builder $ \b → b |># x

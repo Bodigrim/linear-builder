@@ -143,8 +143,8 @@ memptyPinned = runST $ do
 --   (# b', empty #) -> b' >< justifyRight 12 ' ' (empty |> t)
 -- :}
 --
--- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "foo" `appendJustified` "bar")
--- "Test:         foo         bar"
+-- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "AAA" `appendJustified` "BBBBBBB")
+-- "Test:         AAA     BBBBBBB"
 --
 -- Note: a previous buffer is necessary in order to create an empty buffer with
 -- the same characteristics.

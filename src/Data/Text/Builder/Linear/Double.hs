@@ -19,7 +19,15 @@ import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
 
--- | Append double.
+-- | Append the decimal representation of a 'Double'.
+--
+-- Matches 'show' in displaying in standard or scientific notation:
+--
+-- >>> runBuffer (\b -> b |>% 123.456)
+-- "123.456"
+--
+-- >>> runBuffer (\b -> b |>% 1.23e7)
+-- "1.23e7"
 (|>%) ∷ Buffer ⊸ Double → Buffer
 
 infixl 6 |>%
@@ -29,7 +37,10 @@ buffer |>% x =
     (\dst dstOff → unsafeAppendDouble dst dstOff x)
     buffer
 
--- | Prepend double.
+-- | Prepend the decimal representation of a 'Double'.
+--
+-- Matches 'show' in displaying in standard or scientific notation
+-- (see examples in @'(|>%)'@).
 (%<|) ∷ Double → Buffer ⊸ Buffer
 
 infixr 6 %<|
