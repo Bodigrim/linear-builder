@@ -113,7 +113,7 @@ Text src srcOff srcLen <| buffer =
 -- >>> runBuffer (\b -> b |># "foo"# |># "bar"#)
 -- "foobar"
 --
--- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
+-- The literal string must not contain zero bytes @\\NUL@ and must be a valid UTF-8,
 -- these conditions are not checked.
 (|>#) ∷ Buffer ⊸ Addr# → Buffer
 
@@ -133,13 +133,13 @@ buffer |># addr# =
 -- >>> runBuffer (\b -> "foo"# #<| "bar"# #<| b)
 -- "foobar"
 --
--- The literal string must not contain zero bytes @\\0@ and must be a valid UTF-8,
+-- The literal string must not contain zero bytes @\\NUL@ and must be a valid UTF-8,
 -- these conditions are not checked.
 --
 -- /Note:/ When the syntactic extensions @UnboxedTuples@ or @UnboxedSums@ are
 -- enabled, extra spaces are required when using parentheses: i.e. use @( '#<|' )@
 -- instead of @('#<|')@. See the GHC User Guide chapter
--- “[Unboxed types and primitive operations](https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/primitives.html#unboxed-tuples)”
+-- “<https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/primitives.html#unboxed-tuples Unboxed types and primitive operations>”
 -- for further information.
 ( #<| ) ∷ Addr# → Buffer ⊸ Buffer
 
@@ -201,7 +201,7 @@ foldlIntoBuffer f = go
 
 -- $custom_hexadecimal
 --
--- Note that no /upper/ case hexadecimal formatting is provided. This package
--- provides a minimal API with utility functions only for common cases. For
--- other use cases, please adapt the code of this package, e.g. as shown in
--- the [Unicode code point example](https://github.com/Bodigrim/linear-builder/examples/src/Examples/Unicode.hs).
+-- Note that neither /upper/ case nor padded hexadecimal formatting is provided.
+-- This package provides a minimal API with utility functions only for common cases.
+-- For other use cases, please adapt the code of this package, e.g. as shown in
+-- the [Unicode code point example](https://github.com/Bodigrim/linear-builder/blob/master/examples/src/Examples/Unicode.hs).

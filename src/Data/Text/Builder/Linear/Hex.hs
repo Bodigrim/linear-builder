@@ -15,9 +15,10 @@ import GHC.ST (ST)
 
 import Data.Text.Builder.Linear.Core
 
--- | Append the lower-case hexadecimal represensation of a number.
+-- | Append the lower-case hexadecimal representation of a /bounded/ integral
+-- number.
 --
--- Negative numbers are interpreted as their corresponding unsigned number, e.g.
+-- Negative numbers are interpreted as their corresponding unsigned number:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
 -- >>> import Data.Int (Int8, Int16)
@@ -35,9 +36,10 @@ buffer |>& n =
     buffer
 {-# INLINEABLE (|>&) #-}
 
--- | Prepend the lower-case hexadecimal representation of a number.
+-- | Prepend the lower-case hexadecimal representation of a /bounded/ integral
+-- number.
 --
--- Negative numbers are interpreted as their corresponding unsigned number, e.g.
+-- Negative numbers are interpreted as their corresponding unsigned number:
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
 -- >>> import Data.Int (Int8, Int16)
@@ -92,7 +94,7 @@ unsafePrependHex marr !off n = go (off - 1) n
 -- We don't want this behaviour here.
 --
 -- It would suffice to clean the sign bit only once
--- instead of doing it on every iteration of unsafe{Ap,Pre}pernHex.go,
+-- instead of doing it on every iteration of unsafe{Ap,Pre}pendHex.go,
 -- but the performance impact is likely negligible.
 dropNibble ∷ (Integral a, FiniteBits a) ⇒ a → a
 dropNibble x = case (isSigned x, finiteBitSize x) of

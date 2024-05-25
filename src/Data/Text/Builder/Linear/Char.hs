@@ -162,8 +162,8 @@ appendChars count ch buff
 --   (# b', empty #) -> b' >< justifyRight 12 ' ' (empty |> t)
 -- :}
 --
--- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "foo" `appendJustified` "bar")
--- "Test:         foo         bar"
+-- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "AAA" `appendJustified` "BBBBBBB")
+-- "Test:         AAA     BBBBBBB"
 justifyRight ∷ Word → Char → Buffer ⊸ Buffer
 justifyRight n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →

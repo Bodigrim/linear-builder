@@ -27,7 +27,7 @@ import Numeric.QuoteQuot (assumeNonNegArg, astQuot, quoteAST, quoteQuot)
 
 import Data.Text.Builder.Linear.Core
 
--- | Append decimal number.
+-- | Append the decimal representation of a /bounded/ integral number.
 (|>$) ∷ (Integral a, FiniteBits a) ⇒ Buffer ⊸ a → Buffer
 
 infixl 6 |>$
@@ -38,7 +38,7 @@ buffer |>$ n =
     buffer
 {-# INLINEABLE (|>$) #-}
 
--- | Prepend decimal number.
+-- | Prepend the decimal representation of a /bounded/ integral number.
 ($<|) ∷ (Integral a, FiniteBits a) ⇒ a → Buffer ⊸ Buffer
 
 infixr 6 $<|
