@@ -286,27 +286,31 @@ maxIntegerDecLen a = case a of
 --
 -- We approximate @fbs a@ to @bigNatSize a * word_size@.
 maxBitNatDecLen ∷ BN.BigNat# → Int
-maxBitNatDecLen n# =
+maxBitNatDecLen n#
   -- This can overflow in theory, but in practice it would overflow for a BigNat#
   -- of at least:
   --
-  -- • On 32 bits platform: 0.8 GiB, out of max 4 GiB RAM
-  --   → BN.bigNatSize n# = 214748364 = min
-  --       (toInteger (maxBound @Word64 `div` fromIntegral (finiteBitSize @Word32 0 * 5)))
-  --       (((toInteger (maxBound @Int32) - 1) * 16) `div` fromIntegral (finiteBitSize @Word32 0 * 5))
-  -- • On 64 bits platform: 461 PiB
-  --   → BN.bigNatSize n# = 57646075230342348 = min
-  --       (toInteger (maxBound @Word64 `div` fromIntegral (finiteBitSize @Word64 0 * 5)))
-  --       (((toInteger (maxBound @Int64) - 1) * 16) `div` fromIntegral (finiteBitSize @Word64 0 * 5))
+  -- • On 32 bits platform: 6.4 GiB, out of max 4 GiB RAM
+  --   → BN.bigNatSize n# = 214748364 =
+  --       (maxBound @Int32 - 1) `div` fromIntegral (shiftR (finiteBitSize @Word32 0 * 5) 4)
+  -- • On 64 bits platform: 3276 PiB
+  --   → BN.bigNatSize n# = 461168601842738790 =
+  --       (maxBound @Int64 - 1) `div` fromIntegral (shiftR (finiteBitSize @Word64 0 * 5) 4)
   --
-  -- These thresholds are too big to be realistic (32 bits: 20% of RAM, 64 bits:
-  -- integer size in petabytes), so it seems perfectly reasonable to have no
+  -- These thresholds are too big to be realistic (32 bits: more than available RAM, 64
+  -- bits: integer size in petabytes), so it is perfectly reasonable to have no
   -- special handling of overflow here.
-  1
-    + fromIntegral @Word64
-      ( (fromIntegral (BN.bigNatSize n#) * fromIntegral (finiteBitSize @Word 0) * 5)
-          `shiftR` 4
-      )
+
+  -- Word bit size is multiple of 16 (e.g. 32 and 64 bits arch)
+  | rem (finiteBitSize @Word 0) 16 == 0 =
+      1 + fromIntegral (BN.bigNatSize n# * shiftR (fromIntegral (finiteBitSize @Word 0) * 5) 4)
+  -- Other cases (non-standard arch)
+  | otherwise =
+      1
+        + fromIntegral @Word64
+          ( (fromIntegral (BN.bigNatSize n#) * fromIntegral (finiteBitSize @Word 0) * 5)
+              `shiftR` 4
+          )
 {-# INLINEABLE maxBitNatDecLen #-}
 
 integerToBigNat# ∷ Integer → BN.BigNat#
