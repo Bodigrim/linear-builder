@@ -25,6 +25,8 @@ module Data.Text.Builder.Linear.Core (
   appendBounded,
   appendExact,
   prependBounded,
+  prependBounded',
+  appendBounded',
   prependExact,
   (><),
 ) where
@@ -246,6 +248,57 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
   pure $ Text new dstOff (dstLen + srcLen)
 {-# INLINE appendBounded #-}
 
+-- | Low-level routine to append data of unknown size to a 'Buffer', giving
+-- the action the choice between two strategies.
+--
+-- See also: 'appendBounded'.
+appendBounded'
+  ∷ Int
+  -- ^ Upper bound for the number of bytes, written by an action
+  → (∀ s x. ((A.MArray s → Int → ST s Int) → ST s x) → ((A.MArray s → Int → ST s Int) → ST s x) → ST s x)
+  -- ^ Action, which appends bytes using one of the following strategies:
+  --
+  -- * writes bytes __starting__ from the given offset, using its first argument,
+  -- * writes bytes __finishing__ before the given offset, using its second argument.
+  --
+  -- The function passed to either argument returns the actual number of bytes written.
+  → Buffer
+  ⊸ Buffer
+appendBounded' maxSrcLen writer (Buffer (Text dst dstOff dstLen)) = Buffer $ runST $ do
+  let dstFullLen = sizeofByteArray dst
+      newFullLen = dstOff + 2 * (dstLen + maxSrcLen)
+  newM ←
+    if dstOff + dstLen + maxSrcLen <= dstFullLen
+      then unsafeThaw dst
+      else do
+        tmpM ← (if isPinned dst then A.newPinned else A.new) newFullLen
+        A.copyI dstLen tmpM dstOff dst dstOff
+        pure tmpM
+  let append = \appender → do
+        count ← appender newM (dstOff + dstLen)
+        pure (dstOff, count)
+  -- Action that prepends then copies the result to the final destination, if necessary
+  let prepend = \prepender → case dstLen of
+        0 → do
+          -- Buffer is empty: prepend to final destination
+          count ← prepender newM maxSrcLen
+          pure (maxSrcLen - count, count)
+        _ → do
+          -- Require extra buffer + copy to final destination
+          let off'
+                -- Reuse space before current data (no overlap)
+                | dstOff >= maxSrcLen = dstOff
+                -- Reuse space after current data (overlap)
+                | otherwise = dstOff + dstLen + maxSrcLen
+          count ← prepender newM off'
+          -- Note: we rely on copyM allowing overlaps
+          A.copyM newM (dstOff + dstLen) newM (off' - count) count
+          pure (dstOff, count)
+  !(dstOff', srcLen) ← writer append prepend
+  new ← A.unsafeFreeze newM
+  pure $ Text new dstOff' (dstLen + srcLen)
+{-# INLINE appendBounded' #-}
+
 -- | Low-level routine to append data of known size to a 'Buffer'.
 appendExact
   ∷ Int
@@ -288,6 +341,34 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
       new ← A.unsafeFreeze newM
       pure $ Text new newOff (dstLen + srcLen)
 {-# INLINE prependBounded #-}
+
+-- | Low-level routine to prepend data of unknown size to a 'Buffer'.
+--
+-- Contrary to 'prependBounded', only use a prepend action.
+prependBounded'
+  ∷ Int
+  -- ^ Upper bound for the number of bytes, written by an action
+  → (∀ s. A.MArray s → Int → ST s Int)
+  -- ^ Action, which writes bytes __finishing__ before the given offset
+  -- and returns an actual number of bytes written.
+  → Buffer
+  ⊸ Buffer
+prependBounded' maxSrcLen prepender (Buffer (Text dst dstOff dstLen))
+  | maxSrcLen <= dstOff = Buffer $ runST $ do
+      newM ← unsafeThaw dst
+      srcLen ← prepender newM dstOff
+      new ← A.unsafeFreeze newM
+      pure $ Text new (dstOff - srcLen) (srcLen + dstLen)
+  | otherwise = Buffer $ runST $ do
+      let dstFullLen = sizeofByteArray dst
+          off = dstLen + 2 * maxSrcLen
+          newFullLen = off + (dstFullLen - dstOff)
+      newM ← (if isPinned dst then A.newPinned else A.new) newFullLen
+      srcLen ← prepender newM off
+      A.copyI dstLen newM off dst dstOff
+      new ← A.unsafeFreeze newM
+      pure $ Text new (off - srcLen) (dstLen + srcLen)
+{-# INLINE prependBounded' #-}
 
 -- | Low-level routine to append data of known size to a 'Buffer'.
 prependExact

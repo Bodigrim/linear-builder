@@ -78,7 +78,8 @@ import GHC.ST (ST (..))
 
 import Data.Text.Builder.Linear.Char
 import Data.Text.Builder.Linear.Core
-import Data.Text.Builder.Linear.Dec
+import Data.Text.Builder.Linear.Dec.Bounded
+import Data.Text.Builder.Linear.Dec.Unbounded
 import Data.Text.Builder.Linear.Double
 import Data.Text.Builder.Linear.Hex
 
