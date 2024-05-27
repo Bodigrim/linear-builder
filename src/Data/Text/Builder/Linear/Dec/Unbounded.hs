@@ -1,6 +1,12 @@
+-- |
+-- Copyright:   (c) 2024 Pierre Le Marre
+-- Licence:     BSD3
+-- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 module Data.Text.Builder.Linear.Dec.Unbounded (
   (|>$$),
   ($$<|),
+  prependUnboundedDecimal,
+  Strategy (..),
 )
 where
 
@@ -102,7 +108,7 @@ unsafePrependDec marr off@(I# off#) n = case n of
 type DigitsWriter s = Int# → BN.BigNat# → ST s Int
 
 -- TODO: Remove once we choose a strategy
-data Thresholds = SmallOnly | BigOnly | HugeOnly | Optimum
+data Strategy = SmallOnly | BigOnly | HugeOnly | Optimum
 
 -- Use the fastest writer depending on the BigNat size
 unsafePrependBigNatDec ∷ ∀ s. A.MArray s → DigitsWriter s
@@ -112,13 +118,13 @@ unsafePrependBigNatDec marr !off0 !n0
   | otherwise = prependHugeNat marr off0 n0
   where
     -- TODO: simplify once we choose a strategy
-    -- Thresholds on the 'BigNat#' size in order to scale
-    -- threshold = SmallOnly
-    -- threshold = BigOnly
-    -- threshold = HugeOnly
-    threshold = Optimum
+    -- Strategy on the 'BigNat#' size in order to scale
+    -- strategy = SmallOnly
+    -- strategy = BigOnly
+    -- strategy = HugeOnly
+    strategy = Optimum
     bigSizeThreshold, hugeSizeThreshold ∷ Word
-    !(bigSizeThreshold, hugeSizeThreshold) = case threshold of
+    !(bigSizeThreshold, hugeSizeThreshold) = case strategy of
       SmallOnly → (maxBound, maxBound)
       BigOnly → (minBound, maxBound)
       HugeOnly → (minBound, minBound)
@@ -330,3 +336,41 @@ tenPower38 = 1e38
 padWithZeros ∷ ∀ s. A.MArray s → Int → Int → ST s ()
 padWithZeros marr off count = unsafeReplicate marr off count 0x30
 {-# INLINE padWithZeros #-}
+
+--------------------------------------------------------------------------------
+
+-- FIXME: for testing purpose only
+
+prependUnboundedDecimal ∷ Integral a ⇒ Strategy → a → Buffer ⊸ Buffer
+prependUnboundedDecimal strategy n buffer = case toInteger n of
+  !n' →
+    prependBounded'
+      (maxIntegerDecLen n')
+      (\dst dstOff → unsafePrependDec' strategy dst dstOff n')
+      buffer
+
+unsafePrependDec' ∷ ∀ s. Strategy → A.MArray s → Int → Integer → ST s Int
+unsafePrependDec' s marr off@(I# off#) n' = case n' of
+  I.IS i# → Bounded.unsafePrependDec marr off (I# i#)
+  _ → unsafePrependBigNatDec' s marr (off# -# 1#) (integerToBigNat# n') >>= prependSign
+    where
+      prependSign !off' =
+        if n' < 0
+          then do
+            A.unsafeWrite marr (off' - 1) 0x2d -- '-'
+            pure (off - off' + 1)
+          else pure (off - off')
+{-# INLINEABLE unsafePrependDec' #-}
+
+unsafePrependBigNatDec' ∷ ∀ s. Strategy → A.MArray s → DigitsWriter s
+unsafePrependBigNatDec' strategy marr !off0 !n0
+  | BN.bigNatSize n0 < bigSizeThreshold = prependSmallNat marr off0 n0
+  | BN.bigNatSize n0 < hugeSizeThreshold = prependBigNat marr off0 n0
+  | otherwise = prependHugeNat marr off0 n0
+  where
+    bigSizeThreshold, hugeSizeThreshold ∷ Word
+    !(bigSizeThreshold, hugeSizeThreshold) = case strategy of
+      SmallOnly → (maxBound, maxBound)
+      BigOnly → (minBound, maxBound)
+      HugeOnly → (minBound, minBound)
+      Optimum → (25, 400)
