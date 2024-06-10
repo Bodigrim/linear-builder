@@ -68,6 +68,7 @@ instance Monoid Builder where
   mempty = Builder (\b → b)
   {-# INLINE mempty #-}
 
+-- | Use 'fromString' to create 'Builder' from 'String'.
 instance IsString Builder where
   fromString = fromText . fromString
   {-# INLINE fromString #-}
@@ -77,6 +78,8 @@ instance IsString Builder where
 -- >>> :set -XOverloadedStrings
 -- >>> fromText "foo" <> fromText "bar"
 -- "foobar"
+--
+-- For literal strings it is faster to use 'fromAddr' instead of 'fromText'.
 fromText ∷ Text → Builder
 fromText x = Builder $ \b → b |> x
 {-# INLINE fromText #-}
