@@ -235,7 +235,7 @@ prependHugeNat marr off n = ST $ \s1 →
         (# s2, I# o2 #) → (# s2, o2 #)
 
     -- Use ST instead of raw state as the utils functions do.
-    -- `prependTiny` must inlines to leave no boxing/unboxing roundtrip.
+    -- `prependTiny` must inline to leave no boxing/unboxing roundtrip.
     {-# INLINE prependTiny #-}
     prependTiny ∷ Bool → DigitsWriter s
     prependTiny !high !o1 !n# =
@@ -321,6 +321,10 @@ integerToBigNat# n = case I.integerToBigNatSign# n of
 -- Maximal power of 10 fitting into a 'Word':
 -- • 10 ^ 9  for 32 bit words  (32 * log 2 / log 10 ≈  9.63)
 -- • 10 ^ 19 for 64 bit words  (64 * log 2 / log 10 ≈ 19.27)
+--
+-- Why (# #)? We can't have top-level unlifted bindings
+-- (see: https://gitlab.haskell.org/ghc/ghc/-/issues/17521). So we use a function
+-- that take an empty argument (# #) that will be discarded at compile time.
 selectPower ∷ (# #) → (# Word#, Word#, BN.BigNat# #)
 selectPower _ = case finiteBitSize @Word 0 of
   64 → (# 19##, 10000000000000000000##, N.naturalToBigNat# tenPower38 #)
