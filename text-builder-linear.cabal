@@ -22,17 +22,23 @@ source-repository head
     type:     git
     location: git://github.com/Bodigrim/linear-builder.git
 
+flag dev-fit
+  description: tasty-fit
+  manual: True
+  default: False
+
 library
     exposed-modules:
         Data.Text.Builder.Linear
         Data.Text.Builder.Linear.Buffer
         Data.Text.Builder.Linear.Core
+        Data.Text.Builder.Linear.Dec.Unbounded
 
     hs-source-dirs:     src
     other-modules:
         Data.Text.Builder.Linear.Array
         Data.Text.Builder.Linear.Char
-        Data.Text.Builder.Linear.Dec
+        Data.Text.Builder.Linear.Dec.Bounded
         Data.Text.Builder.Linear.Double
         Data.Text.Builder.Linear.Hex
 
@@ -46,6 +52,7 @@ library
         base >=4.16 && <5,
         text >=2.0 && <2.2,
         bytestring >=0.11 && <0.13,
+        ghc-bignum >=1.1 && < 2.0,
         quote-quot >=0.2.1 && <0.3
 
 test-suite linear-builder-tests
@@ -54,7 +61,7 @@ test-suite linear-builder-tests
     hs-source-dirs:     test
     default-language:   GHC2021
     default-extensions:
-        DerivingStrategies LinearTypes MagicHash PatternSynonyms
+        DerivingStrategies LinearTypes MagicHash NumDecimals PatternSynonyms
         UnboxedTuples UnicodeSyntax
 
     ghc-options:
@@ -74,6 +81,7 @@ benchmark linear-builder-bench
     other-modules:
         BenchChar
         BenchDecimal
+        BenchDecimalUnbounded
         BenchDouble
         BenchHexadecimal
         BenchText
@@ -89,7 +97,31 @@ benchmark linear-builder-bench
         -- NOTE: The following packages are optional, but are not required that
         --       often. While they could be guarded by a flag, we prefer keeping
         --       the Hackage page simple. Just uncomment these lines when needed.
-        -- bytestring-strict-builder >= 0.4.5 && < 0.5
+        -- bytestring-strict-builder >= 0.4.5 && < 0.5,
         -- text-builder >= 0.6.7 && < 0.7,
         tasty,
         tasty-bench >=0.3.2 && <0.4
+
+benchmark fit
+    type:               exitcode-stdio-1.0
+    main-is:            bench.hs
+    default-language:   GHC2021
+    default-extensions: CPP LinearTypes NumDecimals UnicodeSyntax
+    ghc-options:        -Wall -rtsopts -O2 -fproc-alignment=64
+    if flag(dev-fit)
+        buildable: True
+        build-depends:
+            base,
+            bytestring,
+            text,
+            text-builder-linear,
+            -- NOTE: The following packages are optional, but are not required that
+            --       often. While they could be guarded by a flag, we prefer keeping
+            --       the Hackage page simple. Just uncomment these lines when needed.
+            -- bytestring-strict-builder >= 0.4.5 && < 0.5,
+            -- text-builder >= 0.6.7 && < 0.7,
+            tasty,
+            tasty-bench >=0.3.2 && <0.4,
+            tasty-bench-fit
+    else
+        buildable: False

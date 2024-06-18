@@ -15,6 +15,7 @@ module Data.Text.Builder.Linear (
   fromChar,
   fromAddr,
   fromDec,
+  fromUnboundedDec,
   fromHex,
   fromDouble,
 ) where
@@ -107,13 +108,21 @@ fromAddr ∷ Addr# → Builder
 fromAddr x = Builder $ \b → b |># x
 {-# INLINE fromAddr #-}
 
--- | Create 'Builder', containing decimal representation of a given integer.
+-- | Create 'Builder', containing decimal representation of a given /bounded/ integer.
 --
 -- >>> fromChar 'x' <> fromDec (123 :: Int)
 -- "x123"
 fromDec ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromDec x = Builder $ \b → b |>$ x
 {-# INLINE fromDec #-}
+
+-- | Create 'Builder', containing decimal representation of a given /unbounded/ integer.
+--
+-- >>> fromChar 'x' <> fromUnboundedDec (1e24 :: Integer)
+-- "x1000000000000000000000000"
+fromUnboundedDec ∷ Integral a ⇒ a → Builder
+fromUnboundedDec x = Builder $ \b → b |>$$ x
+{-# INLINE fromUnboundedDec #-}
 
 -- | Create 'Builder', containing hexadecimal representation of a given integer.
 --
