@@ -167,7 +167,7 @@ prependBigNat marr off0 n0 = prependBig off0 n0
             I# o2 ← prependSmall bigBaseCount o1 r
             prependBig (o2 -# 1#) q
 
-    -- Find k such that pow10^k ≈ √n
+    -- Find k such that bigNatSize (pow10^k) ≈ √(bigNatSize n)
     -- We start at (2, poweredBase²) and not (1, poweredBase), because the latter case
     -- is handled by `prependSmallNat`.
     mkBigBase ∷ BN.BigNat# → (# Word#, BN.BigNat# #)
