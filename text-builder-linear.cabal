@@ -22,18 +22,23 @@ source-repository head
     type:     git
     location: git://github.com/Bodigrim/linear-builder.git
 
+flag dev-fit
+  description: tasty-fit
+  manual: True
+  default: False
+
 library
     exposed-modules:
         Data.Text.Builder.Linear
         Data.Text.Builder.Linear.Buffer
         Data.Text.Builder.Linear.Core
+        Data.Text.Builder.Linear.Dec.Unbounded
 
     hs-source-dirs:     src
     other-modules:
         Data.Text.Builder.Linear.Array
         Data.Text.Builder.Linear.Char
         Data.Text.Builder.Linear.Dec.Bounded
-        Data.Text.Builder.Linear.Dec.Unbounded
         Data.Text.Builder.Linear.Double
         Data.Text.Builder.Linear.Hex
 
@@ -96,3 +101,27 @@ benchmark linear-builder-bench
         -- text-builder >= 0.6.7 && < 0.7,
         tasty,
         tasty-bench >=0.3.2 && <0.4
+
+benchmark fit
+    type:               exitcode-stdio-1.0
+    main-is:            bench.hs
+    default-language:   GHC2021
+    default-extensions: CPP LinearTypes NumDecimals UnicodeSyntax
+    ghc-options:        -Wall -rtsopts -O2 -fproc-alignment=64
+    if flag(dev-fit)
+        buildable: True
+        build-depends:
+            base,
+            bytestring,
+            text,
+            text-builder-linear,
+            -- NOTE: The following packages are optional, but are not required that
+            --       often. While they could be guarded by a flag, we prefer keeping
+            --       the Hackage page simple. Just uncomment these lines when needed.
+            -- bytestring-strict-builder >= 0.4.5 && < 0.5,
+            -- text-builder >= 0.6.7 && < 0.7,
+            tasty,
+            tasty-bench >=0.3.2 && <0.4,
+            tasty-bench-fit
+    else
+        buildable: False
