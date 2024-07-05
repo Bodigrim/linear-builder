@@ -11,19 +11,19 @@ jobs:
   bounds-checking:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: haskell/actions/setup@v2
+    - uses: actions/checkout@v4
+    - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       with:
-        ghc-version: "9.6.2"
+        ghc-version: "9.10.1"
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v3
+    - uses: actions/cache@v4
       name: Cache cabal stuff
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           dist-newstyle
-        key: ${{ runner.os }}-9.6.2
+        key: ${{ runner.os }}-9.10.1
     - name: Test
       run: cabal test --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts' --constraint 'text +developer'
