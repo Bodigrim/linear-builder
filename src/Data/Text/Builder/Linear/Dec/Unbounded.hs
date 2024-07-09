@@ -37,9 +37,10 @@ import GHC.Ptr (plusPtr)
 import GHC.ST (ST (..))
 
 import Data.Text.Builder.Linear.Array (unsafeReplicate)
-import Data.Text.Builder.Linear.Core (Buffer, appendBounded', prependBounded')
+import Data.Text.Builder.Linear.Core (Buffer)
 import Data.Text.Builder.Linear.Dec.Bounded (digits, maxDecLen, quotRem100)
 import Data.Text.Builder.Linear.Dec.Bounded qualified as Bounded
+import Data.Text.Builder.Linear.Internal (appendBounded', prependBounded')
 
 --------------------------------------------------------------------------------
 -- Append
