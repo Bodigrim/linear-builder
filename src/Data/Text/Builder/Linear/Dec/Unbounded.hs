@@ -5,8 +5,8 @@
 module Data.Text.Builder.Linear.Dec.Unbounded (
   (|>$$),
   ($$<|),
-  -- prependUnboundedDecimal,
-  -- Strategy (..),
+  prependUnboundedDecimal,
+  Strategy (..),
 )
 where
 
@@ -354,36 +354,36 @@ padWithZeros marr off count = unsafeReplicate marr off count 0x30
 -- For testing purpose only
 --------------------------------------------------------------------------------
 
--- prependUnboundedDecimal ∷ Integral a ⇒ Strategy → a → Buffer ⊸ Buffer
--- prependUnboundedDecimal strategy n buffer = case toInteger n of
---   !n' →
---     prependBounded'
---       (maxIntegerDecLen n')
---       (\dst dstOff → unsafePrependDec' strategy dst dstOff n')
---       buffer
+prependUnboundedDecimal ∷ Integral a ⇒ Strategy → a → Buffer ⊸ Buffer
+prependUnboundedDecimal strategy n buffer = case toInteger n of
+  !n' →
+    prependBounded'
+      (maxIntegerDecLen n')
+      (\dst dstOff → unsafePrependDec' strategy dst dstOff n')
+      buffer
 
--- unsafePrependDec' ∷ ∀ s. Strategy → A.MArray s → Int → Integer → ST s Int
--- unsafePrependDec' s marr off@(I# off#) n' = case n' of
---   I.IS i# → Bounded.unsafePrependDec marr off (I# i#)
---   _ → unsafePrependBigNatDec' s marr (off# -# 1#) (integerToBigNat# n') >>= prependSign
---     where
---       prependSign !off' =
---         if n' < 0
---           then do
---             A.unsafeWrite marr (off' - 1) 0x2d -- '-'
---             pure (off - off' + 1)
---           else pure (off - off')
--- {-# INLINEABLE unsafePrependDec' #-}
+unsafePrependDec' ∷ ∀ s. Strategy → A.MArray s → Int → Integer → ST s Int
+unsafePrependDec' s marr off@(I# off#) n' = case n' of
+  I.IS i# → Bounded.unsafePrependDec marr off (I# i#)
+  _ → unsafePrependBigNatDec' s marr (off# -# 1#) (integerToBigNat# n') >>= prependSign
+    where
+      prependSign !off' =
+        if n' < 0
+          then do
+            A.unsafeWrite marr (off' - 1) 0x2d -- '-'
+            pure (off - off' + 1)
+          else pure (off - off')
+{-# INLINEABLE unsafePrependDec' #-}
 
--- unsafePrependBigNatDec' ∷ ∀ s. Strategy → A.MArray s → DigitsWriter s
--- unsafePrependBigNatDec' strategy marr !off0 !n0
---   | BN.bigNatSize n0 < bigSizeThreshold = prependSmallNat marr off0 n0
---   | BN.bigNatSize n0 < hugeSizeThreshold = prependBigNat marr off0 n0
---   | otherwise = prependHugeNat marr off0 n0
---   where
---     bigSizeThreshold, hugeSizeThreshold ∷ Word
---     !(bigSizeThreshold, hugeSizeThreshold) = case strategy of
---       SmallOnly → (maxBound, maxBound)
---       BigOnly → (minBound, maxBound)
---       HugeOnly → (minBound, minBound)
---       Optimum → (25, 400)
+unsafePrependBigNatDec' ∷ ∀ s. Strategy → A.MArray s → DigitsWriter s
+unsafePrependBigNatDec' strategy marr !off0 !n0
+  | BN.bigNatSize n0 < bigSizeThreshold = prependSmallNat marr off0 n0
+  | BN.bigNatSize n0 < hugeSizeThreshold = prependBigNat marr off0 n0
+  | otherwise = prependHugeNat marr off0 n0
+  where
+    bigSizeThreshold, hugeSizeThreshold ∷ Word
+    !(bigSizeThreshold, hugeSizeThreshold) = case strategy of
+      SmallOnly → (maxBound, maxBound)
+      BigOnly → (minBound, maxBound)
+      HugeOnly → (minBound, minBound)
+      Optimum → (25, 400)
