@@ -46,6 +46,8 @@ import Data.Text.Builder.Linear.Dec.Bounded qualified as Bounded
 --------------------------------------------------------------------------------
 
 -- | Append the decimal representation of an /unbounded/ integral number.
+--
+-- @since 0.1.3
 (|>$$) ∷ Integral a ⇒ Buffer ⊸ a → Buffer
 
 infixl 6 |>$$
@@ -81,6 +83,8 @@ unsafeAppendDec n = case n of
 --------------------------------------------------------------------------------
 
 -- | Prepend the decimal representation of an /unbounded/ integral number.
+--
+-- @since 0.1.3
 ($$<|) ∷ Integral a ⇒ a → Buffer ⊸ Buffer
 
 infixr 6 $$<|

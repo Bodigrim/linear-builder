@@ -252,6 +252,8 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
 -- the action the choice between two strategies.
 --
 -- See also: 'appendBounded'.
+--
+-- @since 0.1.3
 appendBounded'
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
@@ -345,6 +347,8 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
 -- | Low-level routine to prepend data of unknown size to a 'Buffer'.
 --
 -- Contrary to 'prependBounded', only use a prepend action.
+--
+-- @since 0.1.3
 prependBounded'
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action

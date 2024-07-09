@@ -120,6 +120,8 @@ fromDec x = Builder $ \b → b |>$ x
 --
 -- >>> fromChar 'x' <> fromUnboundedDec (1e24 :: Integer)
 -- "x1000000000000000000000000"
+--
+-- @since 0.1.3
 fromUnboundedDec ∷ Integral a ⇒ a → Builder
 fromUnboundedDec x = Builder $ \b → b |>$$ x
 {-# INLINE fromUnboundedDec #-}

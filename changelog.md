@@ -1,3 +1,7 @@
+## 0.1.3
+
+* Add decimal builders for unbounded inputs: `fromUnboundedDec`, `(|>$$)` and `($$<|)`.
+
 ## 0.1.2
 
 * Fix unsound behaviour caused by inlining of `runBuffer` / `runBufferBS`
