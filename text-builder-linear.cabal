@@ -27,13 +27,13 @@ library
         Data.Text.Builder.Linear
         Data.Text.Builder.Linear.Buffer
         Data.Text.Builder.Linear.Core
-        Data.Text.Builder.Linear.Dec.Unbounded
 
     hs-source-dirs:     src
     other-modules:
         Data.Text.Builder.Linear.Array
         Data.Text.Builder.Linear.Char
         Data.Text.Builder.Linear.Dec.Bounded
+        Data.Text.Builder.Linear.Dec.Unbounded
         Data.Text.Builder.Linear.Double
         Data.Text.Builder.Linear.Hex
         Data.Text.Builder.Linear.Internal
@@ -97,27 +97,3 @@ benchmark linear-builder-bench
         -- text-builder >= 0.6.7 && < 0.7,
         tasty,
         tasty-bench >=0.4 && <0.5
-
-benchmark linear-builder-find-crossover
-    type:               exitcode-stdio-1.0
-    main-is:            FindCrossover.hs
-    hs-source-dirs:     bench
-    other-modules:
-        BenchChar
-        BenchDecimal
-        BenchDecimalUnbounded
-        BenchDouble
-        BenchHexadecimal
-        BenchText
-
-    default-language:   GHC2021
-    default-extensions: CPP LinearTypes NumDecimals UnicodeSyntax
-    ghc-options:        -Wall -rtsopts -O2 -fproc-alignment=64
-    build-depends:
-        base,
-        bytestring,
-        text,
-        text-builder-linear,
-        tasty,
-        tasty-bench >=0.4 && <0.5,
-        tasty-bench-fit >= 0.1.1
