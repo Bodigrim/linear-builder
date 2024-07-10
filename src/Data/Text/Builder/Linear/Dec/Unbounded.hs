@@ -19,16 +19,8 @@ import GHC.Exts (
   State#,
   Word (..),
   Word#,
-  double2Int#,
-  int2Double#,
-  isTrue#,
-  minusWord#,
-  sqrtDouble#,
-  timesWord#,
   word2Int#,
-  (+#),
   (-#),
-  (<#),
  )
 import GHC.Num.BigNat qualified as BN
 import GHC.Num.Integer qualified as I
@@ -112,28 +104,14 @@ unsafePrependDec marr off@(I# off#) n = case n of
 
 type DigitsWriter s = Int# → BN.BigNat# → ST s Int
 
--- TODO: Remove once we choose a strategy
-data Strategy = SmallOnly | BigOnly | HugeOnly | Optimum
-
 -- Use the fastest writer depending on the BigNat size
 unsafePrependBigNatDec ∷ ∀ s. A.MArray s → DigitsWriter s
 unsafePrependBigNatDec marr !off0 !n0
-  | BN.bigNatSize n0 < bigSizeThreshold = prependSmallNat marr off0 n0
-  | BN.bigNatSize n0 < hugeSizeThreshold = prependBigNat marr off0 n0
+  | BN.bigNatSize n0 < hugeSizeThreshold = prependSmallNat marr off0 n0
   | otherwise = prependHugeNat marr off0 n0
   where
-    -- TODO: simplify once we choose a strategy
-    -- Strategy on the 'BigNat#' size in order to scale
-    -- strategy = SmallOnly
-    -- strategy = BigOnly
-    -- strategy = HugeOnly
-    strategy = Optimum
-    bigSizeThreshold, hugeSizeThreshold ∷ Word
-    !(bigSizeThreshold, hugeSizeThreshold) = case strategy of
-      SmallOnly → (maxBound, maxBound)
-      BigOnly → (minBound, maxBound)
-      HugeOnly → (minBound, minBound)
-      Optimum → (25, 400)
+    hugeSizeThreshold ∷ Word
+    hugeSizeThreshold = 80
 
 -- Writer for “small” 'BigNat's.
 --
@@ -153,53 +131,6 @@ prependSmallNat marr = go
             let !o3 = o1 -# (word2Int# power -# 1#)
             padWithZeros marr (I# o3) (o2 - I# o3)
             go (o3 -# 1#) q
-
--- Writer for “big” 'BigNat's.
---
--- Divide repeatedly by pow10^k, where pow10^k ≈ √n, then by pow10.
-prependBigNat ∷ ∀ s. A.MArray s → DigitsWriter s
-prependBigNat marr off0 n0 = prependBig off0 n0
-  where
-    !(# power, poweredBase, poweredBase² #) = selectPower (# #)
-    !(# bigBaseCount, bigBase #) = mkBigBase n0
-
-    prependBig ∷ DigitsWriter s
-    prependBig !o1 !n = case n `BN.bigNatQuotRem#` bigBase of
-      (# q, r #) →
-        if BN.bigNatIsZero q
-          then prependSmallNat marr o1 r
-          else do
-            I# o2 ← prependSmall bigBaseCount o1 r
-            prependBig (o2 -# 1#) q
-
-    -- Find k such that bigNatSize (pow10^k) ≈ √(bigNatSize n)
-    -- We start at (2, poweredBase²) and not (1, poweredBase), because the latter case
-    -- is handled by `prependSmallNat`.
-    mkBigBase ∷ BN.BigNat# → (# Word#, BN.BigNat# #)
-    mkBigBase n# = go 2## poweredBase²
-      where
-        !targetLen = double2Int# (sqrtDouble# (int2Double# (BN.bigNatSize# n#)))
-        go !c !base =
-          if isTrue# (BN.bigNatSize# base <# targetLen)
-            then go (c `timesWord#` 2##) (BN.bigNatMul base base)
-            else (# c, base #)
-
-    prependSmall ∷ Word# → DigitsWriter s
-    prependSmall !c !o1 !n
-      -- Shortcut when n == 0: just fill the zeros
-      | BN.bigNatIsZero n = do
-          let !count = word2Int# (power `timesWord#` c)
-              !o2 = o1 -# count +# 1#
-          padWithZeros marr (I# o2) (I# count)
-          pure (I# o2)
-      | otherwise = case n `BN.bigNatQuotRemWord#` poweredBase of
-          (# q, r #) → do
-            !o2 ← unsafePrependWordDec marr (I# o1) (W# r)
-            let !o3 = o1 -# (word2Int# power -# 1#)
-            padWithZeros marr (I# o3) (o2 - I# o3)
-            case c of
-              1## → pure (I# o3)
-              _ → prependSmall (c `minusWord#` 1##) (o3 -# 1#) q
 
 -- Use the raw state in order to avoid boxed Int in `scaleWriter`
 type DigitsWriter# s = Int# → BN.BigNat# → State# s → (# State# s, Int# #)
@@ -354,6 +285,8 @@ padWithZeros marr off count = unsafeReplicate marr off count 0x30
 -- For testing purpose only
 --------------------------------------------------------------------------------
 
+data Strategy = SmallOnly | HugeOnly
+
 prependUnboundedDecimal ∷ Integral a ⇒ Strategy → a → Buffer ⊸ Buffer
 prependUnboundedDecimal strategy n buffer = case toInteger n of
   !n' →
@@ -376,14 +309,6 @@ unsafePrependDec' s marr off@(I# off#) n' = case n' of
 {-# INLINEABLE unsafePrependDec' #-}
 
 unsafePrependBigNatDec' ∷ ∀ s. Strategy → A.MArray s → DigitsWriter s
-unsafePrependBigNatDec' strategy marr !off0 !n0
-  | BN.bigNatSize n0 < bigSizeThreshold = prependSmallNat marr off0 n0
-  | BN.bigNatSize n0 < hugeSizeThreshold = prependBigNat marr off0 n0
-  | otherwise = prependHugeNat marr off0 n0
-  where
-    bigSizeThreshold, hugeSizeThreshold ∷ Word
-    !(bigSizeThreshold, hugeSizeThreshold) = case strategy of
-      SmallOnly → (maxBound, maxBound)
-      BigOnly → (minBound, maxBound)
-      HugeOnly → (minBound, minBound)
-      Optimum → (25, 400)
+unsafePrependBigNatDec' strategy marr !off0 !n0 = case strategy of
+  SmallOnly → prependSmallNat marr off0 n0
+  HugeOnly → prependHugeNat marr off0 n0
