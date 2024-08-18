@@ -1,3 +1,7 @@
+## 0.1.4
+
+* Add `instance Eq Builder` and `instance Ord Builder`.
+
 ## 0.1.3
 
 * Add decimal builders for unbounded inputs: `fromUnboundedDec`, `(|>$$)` and `($$<|)`.

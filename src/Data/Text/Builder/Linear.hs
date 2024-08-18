@@ -41,6 +41,18 @@ import Data.Text.Builder.Linear.Buffer
 -- but it is faster to use 'Buffer' directly.
 newtype Builder = Builder {unBuilder ∷ Buffer ⊸ Buffer}
 
+-- | @since 0.1.4
+instance Eq Builder where
+  b1 == b2 = runBuilder b1 == runBuilder b2
+
+-- | @since 0.1.4
+instance Ord Builder where
+  compare b1 b2 = compare (runBuilder b1) (runBuilder b2)
+  b1 <= b2 = runBuilder b1 <= runBuilder b2
+  b1 < b2 = runBuilder b1 < runBuilder b2
+  b1 >= b2 = runBuilder b1 >= runBuilder b2
+  b1 > b2 = runBuilder b1 > runBuilder b2
+
 -- | Run 'Builder' computation on an empty 'Buffer', returning strict 'Text'.
 --
 -- >>> :set -XOverloadedStrings -XMagicHash
