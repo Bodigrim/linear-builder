@@ -16,17 +16,16 @@ module Data.Text.Builder.Linear.Array (
 ) where
 
 import Data.Text.Array qualified as A
-import GHC.Exts (Int (..), isByteArrayPinned#, isTrue#, setByteArray#, sizeofByteArray#)
 import GHC.ST (ST (..))
 
-#if __GLASGOW_HASKELL__ >= 909
-import GHC.Exts (unsafeThawByteArray#)
+#if MIN_VERSION_base(4,20,0)
+import GHC.Exts (Int (..), isByteArrayPinned#, isTrue#, setByteArray#, sizeofByteArray#, unsafeThawByteArray#)
 #else
-import GHC.Exts (unsafeCoerce#)
+import GHC.Exts (Int (..), isByteArrayPinned#, isTrue#, setByteArray#, sizeofByteArray#, unsafeCoerce#)
 #endif
 
 unsafeThaw ∷ A.Array → ST s (A.MArray s)
-#if __GLASGOW_HASKELL__ >= 909
+#if MIN_VERSION_base(4,20,0)
 unsafeThaw (A.ByteArray a) = ST $ \s# → case unsafeThawByteArray# a s# of
   (# s'#, ma #) -> (# s'#, A.MutableByteArray ma #)
 #else

@@ -160,7 +160,7 @@ newEmptyBuffer (Buffer t@(Text arr _ _)) =
 -- from [@linear-base@](https://hackage.haskell.org/package/linear-base).
 --
 -- It is a bit tricky to use because of
--- <https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/linear_types.html#limitations current limitations>
+-- <https://downloads.haskell.org/ghc/9.8.1/docs/users_guide/exts/linear_types.html#limitations current limitations>
 -- of linear types with regards to @let@ and @where@. E. g., one cannot write
 --
 -- > let (# b1, b2 #) = dupBuffer b in ("foo" <| b1) >< (b2 |> "bar")
@@ -296,7 +296,7 @@ appendBounded' maxSrcLen writer (Buffer (Text dst dstOff dstLen)) = Buffer $ run
           -- Note: we rely on copyM allowing overlaps
           A.copyM newM (dstOff + dstLen) newM (off' - count) count
           pure (dstOff, count)
-  !(dstOff', srcLen) ← writer append prepend
+  (dstOff', srcLen) ← writer append prepend
   new ← A.unsafeFreeze newM
   pure $ Text new dstOff' (dstLen + srcLen)
 {-# INLINE appendBounded' #-}
