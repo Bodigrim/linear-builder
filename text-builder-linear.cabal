@@ -6,7 +6,10 @@ license-file:    LICENSE
 copyright:       2022 Andrew Lelechenko
 maintainer:      Andrew Lelechenko <andrew.lelechenko@gmail.com>
 author:          Andrew Lelechenko
-tested-with:     ghc ==9.2.8 ghc ==9.4.8 ghc ==9.6.6 ghc ==9.8.2 ghc ==9.10.1
+tested-with:
+    ghc ==9.2.8 ghc ==9.4.8 ghc ==9.6.7 ghc ==9.8.4 ghc ==9.10.1
+    ghc ==9.12.1
+
 homepage:        https://github.com/Bodigrim/linear-builder
 synopsis:        Builder for Text and ByteString based on linear types
 description:
@@ -20,7 +23,7 @@ extra-doc-files:
 
 source-repository head
     type:     git
-    location: git://github.com/Bodigrim/linear-builder.git
+    location: git@github.com:Bodigrim/linear-builder.git
 
 library
     exposed-modules:
@@ -48,7 +51,7 @@ library
         base >=4.16 && <5,
         text >=2.0 && <2.2,
         bytestring >=0.11 && <0.13,
-        ghc-bignum >=1.1 && < 2.0,
+        ghc-bignum >=1.1 && <2.0,
         quote-quot >=0.2.1 && <0.3
 
 test-suite linear-builder-tests
@@ -57,8 +60,8 @@ test-suite linear-builder-tests
     hs-source-dirs:     test
     default-language:   GHC2021
     default-extensions:
-        DerivingStrategies LinearTypes MagicHash NumDecimals PatternSynonyms
-        UnboxedTuples UnicodeSyntax
+        DerivingStrategies LinearTypes MagicHash NumDecimals
+        PatternSynonyms UnboxedTuples UnicodeSyntax
 
     ghc-options:
         -Wall -Wno-orphans -threaded -rtsopts "-with-rtsopts -N"
