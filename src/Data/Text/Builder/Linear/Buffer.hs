@@ -4,7 +4,7 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
--- 'Buffer' for strict 'Text', based on linear types.
+-- t'Buffer' for strict t'Text', based on linear types.
 module Data.Text.Builder.Linear.Buffer (
   -- * Type
   Buffer,
@@ -83,7 +83,7 @@ import Data.Text.Builder.Linear.Dec.Unbounded
 import Data.Text.Builder.Linear.Double
 import Data.Text.Builder.Linear.Hex
 
--- | Append 'Text' suffix to a 'Buffer' by mutating it.
+-- | Append t'Text' suffix to a t'Buffer' by mutating it.
 -- If a suffix is statically known, consider using '(|>#)' for optimal performance.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
@@ -98,7 +98,7 @@ buffer |> (Text src srcOff srcLen) =
     (\dst dstOff → A.copyI srcLen dst dstOff src srcOff)
     buffer
 
--- | Prepend 'Text' prefix to a 'Buffer' by mutating it.
+-- | Prepend t'Text' prefix to a t'Buffer' by mutating it.
 -- If a prefix is statically known, consider using '(#<|)' for optimal performance.
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes
@@ -114,7 +114,7 @@ Text src srcOff srcLen <| buffer =
     buffer
 
 -- | Append a null-terminated UTF-8 string
--- to a 'Buffer' by mutating it. E. g.,
+-- to a t'Buffer' by mutating it. E. g.,
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
 -- >>> runBuffer (\b -> b |># "foo"# |># "bar"#)
@@ -134,7 +134,7 @@ buffer |># addr# =
     srcLen = I# (cstringLength# addr#)
 
 -- | Prepend a null-terminated UTF-8 string
--- to a 'Buffer' by mutating it. E. g.,
+-- to a t'Buffer' by mutating it. E. g.,
 --
 -- >>> :set -XOverloadedStrings -XLinearTypes -XMagicHash
 -- >>> runBuffer (\b -> "foo"# #<| "bar"# #<| b)

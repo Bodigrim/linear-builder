@@ -3,7 +3,7 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
--- Builder for strict 'Text' and 'ByteString', based on linear types. It consistently
+-- Builder for strict t'Text' and 'ByteString', based on linear types. It consistently
 -- outperforms "Data.Text.Lazy.Builder"
 -- from @text@ as well as a strict builder from @text-builder@,
 -- and scales better.
@@ -27,7 +27,7 @@ import GHC.Exts (Addr#, IsString (..))
 
 import Data.Text.Builder.Linear.Buffer
 
--- | Thin wrapper over 'Buffer' with a handy 'Semigroup' instance.
+-- | Thin wrapper over t'Buffer' with a handy 'Semigroup' instance.
 --
 -- >>> :set -XOverloadedStrings -XMagicHash
 -- >>> fromText "foo" <> fromChar '_' <> fromAddr "bar"#
@@ -36,9 +36,9 @@ import Data.Text.Builder.Linear.Buffer
 -- Remember: this is a strict builder, so on contrary to "Data.Text.Lazy.Builder"
 -- for optimal performance you should use strict left folds instead of lazy right ones.
 --
--- Note that (similar to other builders) concatenation of 'Builder's allocates
+-- Note that (similar to other builders) concatenation of t'Builder's allocates
 -- thunks. This is to a certain extent mitigated by aggressive inlining,
--- but it is faster to use 'Buffer' directly.
+-- but it is faster to use t'Buffer' directly.
 newtype Builder = Builder {unBuilder ∷ Buffer ⊸ Buffer}
 
 -- | @since 0.1.4
@@ -53,7 +53,7 @@ instance Ord Builder where
   b1 >= b2 = runBuilder b1 >= runBuilder b2
   b1 > b2 = runBuilder b1 > runBuilder b2
 
--- | Run 'Builder' computation on an empty 'Buffer', returning strict 'Text'.
+-- | Run t'Builder' computation on an empty t'Buffer', returning strict t'Text'.
 --
 -- >>> :set -XOverloadedStrings -XMagicHash
 -- >>> runBuilder (fromText "foo" <> fromChar '_' <> fromAddr "bar"#)
@@ -81,12 +81,12 @@ instance Monoid Builder where
   mempty = Builder (\b → b)
   {-# INLINE mempty #-}
 
--- | Use 'fromString' to create 'Builder' from 'String'.
+-- | Use 'fromString' to create t'Builder' from 'String'.
 instance IsString Builder where
   fromString = fromText . fromString
   {-# INLINE fromString #-}
 
--- | Create 'Builder', containing a given 'Text'.
+-- | Create t'Builder', containing a given t'Text'.
 --
 -- >>> :set -XOverloadedStrings
 -- >>> fromText "foo" <> fromText "bar"
@@ -97,7 +97,7 @@ fromText ∷ Text → Builder
 fromText x = Builder $ \b → b |> x
 {-# INLINE fromText #-}
 
--- | Create 'Builder', containing a given 'Char'.
+-- | Create t'Builder', containing a given 'Char'.
 --
 -- >>> fromChar 'x' <> fromChar 'y'
 -- "xy"
@@ -108,7 +108,7 @@ fromChar ∷ Char → Builder
 fromChar x = Builder $ \b → b |>. x
 {-# INLINE fromChar #-}
 
--- | Create 'Builder', containing a null-terminated UTF-8 string, specified by 'Addr#'.
+-- | Create t'Builder', containing a null-terminated UTF-8 string, specified by 'Addr#'.
 --
 -- >>> :set -XMagicHash
 -- >>> fromAddr "foo"# <> fromAddr "bar"#
@@ -120,7 +120,7 @@ fromAddr ∷ Addr# → Builder
 fromAddr x = Builder $ \b → b |># x
 {-# INLINE fromAddr #-}
 
--- | Create 'Builder', containing decimal representation of a given /bounded/ integer.
+-- | Create t'Builder', containing decimal representation of a given /bounded/ integer.
 --
 -- >>> fromChar 'x' <> fromDec (123 :: Int)
 -- "x123"
@@ -128,7 +128,7 @@ fromDec ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromDec x = Builder $ \b → b |>$ x
 {-# INLINE fromDec #-}
 
--- | Create 'Builder', containing decimal representation of a given /unbounded/ integer.
+-- | Create t'Builder', containing decimal representation of a given /unbounded/ integer.
 --
 -- >>> fromChar 'x' <> fromUnboundedDec (1e24 :: Integer)
 -- "x1000000000000000000000000"
@@ -138,7 +138,7 @@ fromUnboundedDec ∷ Integral a ⇒ a → Builder
 fromUnboundedDec x = Builder $ \b → b |>$$ x
 {-# INLINE fromUnboundedDec #-}
 
--- | Create 'Builder', containing hexadecimal representation of a given integer.
+-- | Create t'Builder', containing hexadecimal representation of a given integer.
 --
 -- >>> :set -XMagicHash
 -- >>> fromAddr "0x"# <> fromHex (0x123def :: Int)
@@ -147,7 +147,7 @@ fromHex ∷ (Integral a, FiniteBits a) ⇒ a → Builder
 fromHex x = Builder $ \b → b |>& x
 {-# INLINE fromHex #-}
 
--- | Create 'Builder', containing decimal representation of a given 'Double'.
+-- | Create t'Builder', containing decimal representation of a given 'Double'.
 --
 -- >>> :set -XMagicHash
 -- >>> fromAddr "pi="# <> fromDouble pi

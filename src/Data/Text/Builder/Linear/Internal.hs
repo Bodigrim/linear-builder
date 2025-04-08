@@ -4,7 +4,7 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
--- Internal routines for 'Buffer' manipulations.
+-- Internal routines for t'Buffer' manipulations.
 module Data.Text.Builder.Linear.Internal (
   -- * Type
   Buffer,
@@ -41,15 +41,15 @@ import GHC.ST (ST (..), runST)
 
 import Data.Text.Builder.Linear.Array
 
--- | Internally 'Buffer' is a mutable buffer.
--- If a client gets hold of a variable of type 'Buffer',
+-- | Internally t'Buffer' is a mutable buffer.
+-- If a client gets hold of a variable of type t'Buffer',
 -- they'd be able to pass a mutable buffer to concurrent threads.
 -- That's why API below is carefully designed to prevent such possibility:
--- clients always work with linear functions 'Buffer' ⊸ 'Buffer' instead
--- and run them on an empty 'Buffer' to extract results.
+-- clients always work with linear functions t'Buffer' ⊸ t'Buffer' instead
+-- and run them on an empty t'Buffer' to extract results.
 --
 -- In terms of [@linear-base@](https://hackage.haskell.org/package/linear-base)
--- 'Buffer' is [@Consumable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Consumable)
+-- t'Buffer' is [@Consumable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Consumable)
 -- (see 'consumeBuffer')
 -- and [@Dupable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Dupable)
 -- (see 'dupBuffer'),
@@ -63,19 +63,19 @@ import Data.Text.Builder.Linear.Array
 -- Remember: this is a strict builder, so on contrary to "Data.Text.Lazy.Builder"
 -- for optimal performance you should use strict left folds instead of lazy right ones.
 --
--- 'Buffer' is an unlifted datatype,
+-- t'Buffer' is an unlifted datatype,
 -- so you can put it into an unboxed tuple @(# ..., ... #)@,
 -- but not into @(..., ...)@.
 data Buffer ∷ TYPE ('BoxedRep 'Unlifted) where
   Buffer ∷ {-# UNPACK #-} !Text → Buffer
 
--- | Unwrap 'Buffer', no-op.
+-- | Unwrap t'Buffer', no-op.
 -- Most likely, this is not the function you're looking for
 -- and you need 'runBuffer' instead.
 unBuffer ∷ Buffer ⊸ Text
 unBuffer (Buffer x) = x
 
--- | Run a linear function on an empty 'Buffer', producing a strict 'Text'.
+-- | Run a linear function on an empty t'Buffer', producing a strict t'Text'.
 --
 -- Be careful to write @runBuffer (\\b -> ...)@ instead of @runBuffer $ \\b -> ...@,
 -- because current implementation of linear types lacks special support for '($)'.
@@ -88,10 +88,8 @@ unBuffer (Buffer x) = x
 -- 'runBuffer' is similar in spirit to mutable arrays API in
 -- [@Data.Array.Mutable.Linear@](https://hackage.haskell.org/package/linear-base/docs/Data-Array-Mutable-Linear.html),
 -- which provides functions like
--- [@fromList@](https://hackage.haskell.org/package/linear-base/docs/Data-Array-Mutable-Linear.html#v:fromList) ∷ [@a@] → (@Vector@ @a@ ⊸ [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) b) ⊸ [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) @b@.
--- Here the initial buffer is always empty and @b@ is 'Text'. Since 'Text' is
--- [@Movable@](https://hackage.haskell.org/package/linear-base/docs/Prelude-Linear.html#t:Movable),
--- 'Text' and [@Ur@](https://hackage.haskell.org/package/linear-base-0.3.0/docs/Prelude-Linear.html#t:Ur) 'Text' are equivalent.
+-- [@fromList@](https://hackage.haskell.org/package/linear-base/docs/Data-Array-Mutable-Linear.html#v:fromList) ∷ @Movable@ @b@ ⇒ [@a@] → (@Array@ @a@ ⊸ @b@) ⊸ @b@.
+-- Here the initial buffer is always empty and @b@ is t'Text'.
 runBuffer ∷ (Buffer ⊸ Buffer) ⊸ Text
 runBuffer f = unBuffer (shrinkBuffer (f (Buffer mempty)))
 {-# NOINLINE runBuffer #-}
@@ -100,7 +98,7 @@ runBuffer f = unBuffer (shrinkBuffer (f (Buffer mempty)))
   See https://github.com/Bodigrim/linear-builder/issues/19
   and https://github.com/tweag/linear-base/pull/187#discussion_r489081926
   for the discussion why NOINLINE here and below in 'runBufferBS' is necessary.
-  Without it CSE (common subexpression elimination) can pull out 'Buffer's from
+  Without it CSE (common subexpression elimination) can pull out t'Buffer's from
   different 'runBuffer's and share them, which is absolutely not what we want.
 -}
 
@@ -126,9 +124,9 @@ memptyPinned = runST $ do
   arr ← A.unsafeFreeze marr
   pure $ Text arr 0 0
 
--- | Create an empty 'Buffer'.
+-- | Create an empty t'Buffer'.
 --
--- The first 'Buffer' is the input and the second is a new empty 'Buffer'.
+-- The first t'Buffer' is the input and the second is a new empty t'Buffer'.
 --
 -- This function is needed in some situations, e.g. with
 -- 'Data.Text.Builder.Linear.Buffer.justifyRight'. The following example creates
@@ -172,7 +170,7 @@ newEmptyBuffer (Buffer t@(Text arr _ _)) =
 -- >>> runBuffer (\b -> case dupBuffer b of (# b1, b2 #) -> ("foo" <| b1) >< (b2 |> "bar"))
 -- "foobar"
 --
--- Note the unboxed tuple: 'Buffer' is an unlifted datatype,
+-- Note the unboxed tuple: t'Buffer' is an unlifted datatype,
 -- so it cannot be put into @(..., ...)@.
 dupBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
@@ -184,7 +182,7 @@ dupBuffer (Buffer x) = (# Buffer x, Buffer (T.copy x) #)
 consumeBuffer ∷ Buffer ⊸ ()
 consumeBuffer Buffer {} = ()
 
--- | Erase buffer's content, replacing it with an empty 'Text'.
+-- | Erase buffer's content, replacing it with an empty t'Text'.
 eraseBuffer ∷ Buffer ⊸ Buffer
 eraseBuffer (Buffer (Text arr _ _)) =
   Buffer (if isPinned arr then memptyPinned else mempty)
@@ -208,7 +206,7 @@ byteSizeOfBuffer (Buffer t@(Text _ _ len)) = (# Buffer t, fromIntegral len #)
 lengthOfBuffer ∷ Buffer ⊸ (# Buffer, Word #)
 lengthOfBuffer (Buffer t) = (# Buffer t, fromIntegral (T.length t) #)
 
--- | Slice 'Buffer' by dropping given number of 'Char's.
+-- | Slice t'Buffer' by dropping given number of 'Char's.
 dropBuffer ∷ Word → Buffer ⊸ Buffer
 dropBuffer nChar (Buffer t@(Text arr off len))
   | nByte <= 0 = Buffer (Text arr (off + len) 0)
@@ -216,7 +214,7 @@ dropBuffer nChar (Buffer t@(Text arr off len))
   where
     nByte = T.measureOff (fromIntegral nChar) t
 
--- | Slice 'Buffer' by taking given number of 'Char's.
+-- | Slice t'Buffer' by taking given number of 'Char's.
 takeBuffer ∷ Word → Buffer ⊸ Buffer
 takeBuffer nChar (Buffer t@(Text arr off _))
   | nByte <= 0 = Buffer t
@@ -224,7 +222,7 @@ takeBuffer nChar (Buffer t@(Text arr off _))
   where
     nByte = T.measureOff (fromIntegral nChar) t
 
--- | Low-level routine to append data of unknown size to a 'Buffer'.
+-- | Low-level routine to append data of unknown size to a t'Buffer'.
 appendBounded
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
@@ -248,7 +246,7 @@ appendBounded maxSrcLen appender (Buffer (Text dst dstOff dstLen)) = Buffer $ ru
   pure $ Text new dstOff (dstLen + srcLen)
 {-# INLINE appendBounded #-}
 
--- | Low-level routine to append data of unknown size to a 'Buffer', giving
+-- | Low-level routine to append data of unknown size to a t'Buffer', giving
 -- the action the choice between two strategies.
 --
 -- See also: 'appendBounded'.
@@ -301,7 +299,7 @@ appendBounded' maxSrcLen writer (Buffer (Text dst dstOff dstLen)) = Buffer $ run
   pure $ Text new dstOff' (dstLen + srcLen)
 {-# INLINE appendBounded' #-}
 
--- | Low-level routine to append data of known size to a 'Buffer'.
+-- | Low-level routine to append data of known size to a t'Buffer'.
 appendExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
@@ -315,7 +313,7 @@ appendExact srcLen appender =
     (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE appendExact #-}
 
--- | Low-level routine to prepend data of unknown size to a 'Buffer'.
+-- | Low-level routine to prepend data of unknown size to a t'Buffer'.
 prependBounded
   ∷ Int
   -- ^ Upper bound for the number of bytes, written by an action
@@ -344,7 +342,7 @@ prependBounded maxSrcLen prepender appender (Buffer (Text dst dstOff dstLen))
       pure $ Text new newOff (dstLen + srcLen)
 {-# INLINE prependBounded #-}
 
--- | Low-level routine to prepend data of unknown size to a 'Buffer'.
+-- | Low-level routine to prepend data of unknown size to a t'Buffer'.
 --
 -- Contrary to 'prependBounded', only use a prepend action.
 --
@@ -374,7 +372,7 @@ prependBounded' maxSrcLen prepender (Buffer (Text dst dstOff dstLen))
       pure $ Text new (off - srcLen) (dstLen + srcLen)
 {-# INLINE prependBounded' #-}
 
--- | Low-level routine to append data of known size to a 'Buffer'.
+-- | Low-level routine to append data of known size to a t'Buffer'.
 prependExact
   ∷ Int
   -- ^ Exact number of bytes, written by an action
@@ -389,7 +387,7 @@ prependExact srcLen appender =
     (\dst dstOff → appender dst dstOff >> pure srcLen)
 {-# INLINE prependExact #-}
 
--- | Concatenate two 'Buffer's, potentially mutating both of them.
+-- | Concatenate two t'Buffer's, potentially mutating both of them.
 --
 -- You likely need to use 'dupBuffer' to get hold on two builders at once:
 --

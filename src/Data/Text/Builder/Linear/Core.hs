@@ -4,7 +4,7 @@
 -- Licence:     BSD3
 -- Maintainer:  Andrew Lelechenko <andrew.lelechenko@gmail.com>
 --
--- Low-level routines for 'Buffer' manipulations.
+-- Low-level routines for t'Buffer' manipulations.
 module Data.Text.Builder.Linear.Core (
   -- * Type
   Buffer,

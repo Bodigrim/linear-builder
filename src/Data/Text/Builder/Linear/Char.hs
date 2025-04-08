@@ -31,7 +31,7 @@ import Data.Text.Builder.Linear.Core
 -- Single char
 --------------------------------------------------------------------------------
 
--- | Append 'Char' to a 'Buffer' by mutating it.
+-- | Append 'Char' to a t'Buffer' by mutating it.
 --
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> b |>. 'q' |>. 'w')
@@ -45,7 +45,7 @@ import Data.Text.Builder.Linear.Core
 infixl 6 |>.
 buffer |>. ch = appendBounded 4 (\dst dstOff → unsafeWrite dst dstOff ch) buffer
 
--- | Prepend 'Char' to a 'Buffer' by mutating it.
+-- | Prepend 'Char' to a t'Buffer' by mutating it.
 --
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> 'q' .<| 'w' .<| b)
@@ -95,7 +95,7 @@ unsafePrependCharM marr off c = case utf8Length c of
 -- Multiple chars
 --------------------------------------------------------------------------------
 
--- | Prepend a given count of a 'Char' to a 'Buffer'.
+-- | Prepend a given count of a 'Char' to a t'Buffer'.
 --
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> prependChars 3 'x' (b |>. 'A'))
@@ -115,7 +115,7 @@ prependChars count ch buff
               )
               buff
 
--- | Apppend a given count of a 'Char' to a 'Buffer'.
+-- | Apppend a given count of a 'Char' to a t'Buffer'.
 --
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> appendChars 3 'x' (b |>. 'A'))
