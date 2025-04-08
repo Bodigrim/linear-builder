@@ -19,7 +19,8 @@ import qualified Data.Text.Internal.Fusion as Fusion
 import Test.Tasty.Bench
 
 #ifdef MIN_VERSION_text_builder
-import qualified Text.Builder
+import qualified TextBuilder
+import qualified TextBuilderDev as TextBuilder
 #endif
 
 #ifdef MIN_VERSION_bytestring_strict_builder
@@ -44,10 +45,10 @@ benchLazyBuilderBS = B.toStrict . B.toLazyByteString . go mempty
 
 #ifdef MIN_VERSION_text_builder
 benchStrictBuilder ∷ Int → T.Text
-benchStrictBuilder = Text.Builder.run . go mempty
+benchStrictBuilder = TextBuilder.toText . go mempty
   where
     go !acc 0 = acc
-    go !acc n = let ch = chr n in go (Text.Builder.char ch <> (acc <> Text.Builder.char ch)) (n - 1)
+    go !acc n = let ch = chr n in go (TextBuilder.char ch <> (acc <> TextBuilder.char ch)) (n - 1)
 #endif
 
 #ifdef MIN_VERSION_bytestring_strict_builder
@@ -73,7 +74,7 @@ mkGroupChar n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchLazyBuilder n
   , bench "Data.ByteString.Builder" $ nf benchLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
-  , bench "Text.Builder" $ nf benchStrictBuilder n
+  , bench "TextBuilder" $ nf benchStrictBuilder n
 #endif
 #ifdef MIN_VERSION_bytestring_strict_builder
   , bench "ByteString.StrictBuilder" $ nf benchStrictBuilderBS n
@@ -110,13 +111,13 @@ benchCharsLazyBuilderBS = B.toStrict . B.toLazyByteString . go mempty
 
 #ifdef MIN_VERSION_text_builder
 benchCharsStrictBuilder ∷ Int → T.Text
-benchCharsStrictBuilder = Text.Builder.run . go mempty
+benchCharsStrictBuilder = TextBuilder.toText . go mempty
   where
     go !acc 0 = acc
     go !acc n = let ch = chr n in go (replicateChar ch <> (acc <> replicateChar ch)) (n - 1)
 
     -- [TODO] Is there a better way?
-    replicateChar ch = Text.Builder.padFromRight (fromIntegral charCount) ch mempty
+    replicateChar ch = TextBuilder.padFromRight (fromIntegral charCount) ch mempty
 #endif
 
 {- [TODO]
@@ -144,7 +145,7 @@ mkGroupChars n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchCharsLazyBuilder n
   -- , bench "Data.ByteString.Builder" $ nf benchCharsLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
-  , bench "Text.Builder" $ nf benchCharsStrictBuilder n
+  , bench "TextBuilder" $ nf benchCharsStrictBuilder n
 #endif
 -- #ifdef MIN_VERSION_bytestring_strict_builder
 --   , bench "ByteString.StrictBuilder" $ nf benchCharsStrictBuilderBS n
@@ -180,13 +181,13 @@ benchPaddingLazyBuilderBS = B.toStrict . B.toLazyByteString . go mempty
 
 #ifdef MIN_VERSION_text_builder
 benchPaddingStrictBuilder ∷ Int → T.Text
-benchPaddingStrictBuilder = Text.Builder.run . go mempty 0
+benchPaddingStrictBuilder = TextBuilder.toText . go mempty 0
   where
     go !acc !_ 0 = acc
     go !acc l  n =
       let ch = chr n
           !l' = l + 2 * fromIntegral charCount
-      in go (Text.Builder.padFromRight l' ch (Text.Builder.padFromLeft (l + fromIntegral charCount) ch acc))
+      in go (TextBuilder.padFromRight l' ch (TextBuilder.padFromLeft (l + fromIntegral charCount) ch acc))
             l'
             (n - 1)
 #endif
@@ -221,7 +222,7 @@ mkGroupPadding n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchPaddingLazyBuilder n
   -- , bench "Data.ByteString.Builder" $ nf benchPaddingLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
-  , bench "Text.Builder" $ nf benchPaddingStrictBuilder n
+  , bench "TextBuilder" $ nf benchPaddingStrictBuilder n
 #endif
 -- #ifdef MIN_VERSION_bytestring_strict_builder
 --   , bench "ByteString.StrictBuilder" $ nf benchPaddingStrictBuilderBS n

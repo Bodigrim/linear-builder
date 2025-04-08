@@ -14,7 +14,7 @@ import Data.Text.Lazy.Builder.Int (decimal)
 import Test.Tasty.Bench (Benchmark, bench, bgroup, nf)
 
 #ifdef MIN_VERSION_text_builder
-import qualified Text.Builder
+import qualified TextBuilder
 #endif
 
 #ifdef MIN_VERSION_bytestring_strict_builder
@@ -47,10 +47,10 @@ benchLazyBuilderBS k = B.toStrict . B.toLazyByteString . go mempty
 
 #ifdef MIN_VERSION_text_builder
 benchStrictBuilder ∷ (Integral a) ⇒ a → Int → T.Text
-benchStrictBuilder k = Text.Builder.run . go mempty
+benchStrictBuilder k = TextBuilder.toText . go mempty
   where
     go !acc 0 = acc
-    go !acc n = let i = fromIntegral n * k in go (Text.Builder.decimal i <> (acc <> Text.Builder.decimal i)) (n - 1)
+    go !acc n = let i = fromIntegral n * k in go (TextBuilder.decimal i <> (acc <> TextBuilder.decimal i)) (n - 1)
 {-# SPECIALIZE benchStrictBuilder ∷ Int → Int → T.Text #-}
 {-# SPECIALIZE benchStrictBuilder ∷ Integer → Int → T.Text #-}
 #endif
@@ -82,7 +82,7 @@ mkBoundedGroup n =
     [ bench "Data.Text.Lazy.Builder" $ nf (benchLazyBuilder int) n
     , bench "Data.ByteString.Builder" $ nf (benchLazyBuilderBS int) n
 #ifdef MIN_VERSION_text_builder
-    , bench "Text.Builder" $ nf (benchStrictBuilder int) n
+    , bench "TextBuilder" $ nf (benchStrictBuilder int) n
 #endif
 #ifdef MIN_VERSION_bytestring_strict_builder
     , bench "ByteString.StrictBuilder" $ nf (benchStrictBuilderBS int) n
@@ -136,7 +136,7 @@ mkUnboundedGroup integer n =
     [ bench "Data.Text.Lazy.Builder" $ nf (benchLazyBuilder integer) n
     , bench "Data.ByteString.Builder" $ nf (benchUnboundedLazyBuilderBS integer) n
 #ifdef MIN_VERSION_text_builder
-    , bench "Text.Builder" $ nf (benchStrictBuilder integer) n
+    , bench "TextBuilder" $ nf (benchStrictBuilder integer) n
 #endif
 #ifdef MIN_VERSION_bytestring_strict_builder
     , bench "ByteString.StrictBuilder" $ nf (benchStrictBuilderBS integer) n

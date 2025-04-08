@@ -59,14 +59,14 @@ Let's benchmark builders, which concatenate all `Char` from `minBound` to `maxBo
 ```haskell
 #!/usr/bin/env cabal
 {- cabal:
-build-depends: base, tasty-bench, text, text-builder, text-builder-linear
+build-depends: base, tasty-bench, text, text-builder >= 1.0, text-builder-linear
 ghc-options: -O2
 -}
 
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TLB
-import qualified Text.Builder as TB
+import qualified TextBuilder as TB
 import qualified Data.Text.Builder.Linear as TBL
 import System.Environment (getArgs)
 import Test.Tasty.Bench
@@ -79,7 +79,7 @@ main :: IO ()
 main = defaultMain
   [ mkBench "text, lazy" TLB.singleton (fromIntegral . TL.length . TLB.toLazyText)
   , mkBench "text, strict" TLB.singleton (T.length . TL.toStrict . TLB.toLazyText)
-  , mkBench "text-builder" TB.char (T.length . TB.run)
+  , mkBench "text-builder" TB.char (T.length . TB.toText)
   , mkBench "text-builder-linear" TBL.fromChar (T.length . TBL.runBuilder)
   ]
 ```
@@ -117,7 +117,7 @@ The last result corresponds to the current package. We generate a strict
 high. Nevertheless, it is already faster than the usual `Text` builder with
 strict consumer and does not strain the garbage collector.
 
-Things get very different if we remove `{-# INLINE mkBench #-}`:
+As of GHC 9.10, things get very different if we remove `{-# INLINE mkBench #-}`:
 
 ```
 text, lazy:

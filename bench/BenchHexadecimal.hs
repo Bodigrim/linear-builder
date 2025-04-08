@@ -15,7 +15,7 @@ import Data.Text.Lazy.Builder.Int (hexadecimal)
 import Test.Tasty.Bench
 
 #ifdef MIN_VERSION_text_builder
-import qualified Text.Builder
+import qualified TextBuilder
 #endif
 
 word :: Word
@@ -35,10 +35,10 @@ benchLazyBuilderBS = B.toStrict . B.toLazyByteString . go mempty
 
 #ifdef MIN_VERSION_text_builder
 benchStrictBuilder ∷ Word → T.Text
-benchStrictBuilder = Text.Builder.run . go mempty
+benchStrictBuilder = TextBuilder.toText . go mempty
   where
     go !acc 0 = acc
-    go !acc n = let i = n * word in go (Text.Builder.hexadecimal i <> (acc <> Text.Builder.hexadecimal i)) (n - 1)
+    go !acc n = let i = n * word in go (TextBuilder.hexadecimal i <> (acc <> TextBuilder.hexadecimal i)) (n - 1)
 #endif
 
 benchLinearBuilderWord ∷ Word → T.Text
@@ -63,7 +63,7 @@ mkGroup n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchLazyBuilder n
   , bench "Data.ByteString.Builder" $ nf benchLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
-  , bench "Text.Builder" $ nf benchStrictBuilder n
+  , bench "TextBuilder" $ nf benchStrictBuilder n
 #endif
   , bench "Data.Text.Builder.Linear (Word)" $ nf benchLinearBuilderWord n
   , bench "Data.Text.Builder.Linear (Int)" $ nf benchLinearBuilderInt n

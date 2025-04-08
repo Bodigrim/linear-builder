@@ -48,7 +48,7 @@ parseLine xs = M.singleton title (M.singleton size group)
     group = case ws of
       "Data.Text.Lazy.Builder" -> mempty { grpTextLazy = Just time }
       "Data.ByteString.Builder" -> mempty { grpBSLazy = Just time }
-      "Text.Builder" -> mempty { grpTextStrict = Just time }
+      "TextBuilder" -> mempty { grpTextStrict = Just time }
       "ByteString.StrictBuilder" -> mempty { grpBSStrict = Just time }
       "Data.Text.Builder.Linear" -> mempty { grpLinear = Just time }
 

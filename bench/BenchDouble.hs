@@ -15,7 +15,8 @@ import Data.Text.Lazy.Builder.RealFloat (realFloat)
 import Test.Tasty.Bench
 
 #ifdef MIN_VERSION_text_builder
-import qualified Text.Builder
+import qualified TextBuilder
+import qualified TextBuilderDev as TextBuilder
 #endif
 
 dbl :: Double
@@ -35,10 +36,10 @@ benchLazyBuilderBS = B.toStrict . B.toLazyByteString . go mempty
 
 #ifdef MIN_VERSION_text_builder
 benchStrictBuilder ∷ Int → T.Text
-benchStrictBuilder = Text.Builder.run . go mempty
+benchStrictBuilder = TextBuilder.toText . go mempty
   where
     go !acc 0 = acc
-    go !acc n = let d = fromIntegral n * dbl in go (Text.Builder.fixedDouble 17 d <> (acc <> Text.Builder.fixedDouble 17 d)) (n - 1)
+    go !acc n = let d = fromIntegral n * dbl in go (TextBuilder.doubleFixedPoint 17 d <> (acc <> TextBuilder.doubleFixedPoint 17 d)) (n - 1)
 #endif
 
 benchLinearBuilder ∷ Int → T.Text
@@ -56,7 +57,7 @@ mkGroup n = bgroup (show n)
   [ bench "Data.Text.Lazy.Builder" $ nf benchLazyBuilder n
   , bench "Data.ByteString.Builder" $ nf benchLazyBuilderBS n
 #ifdef MIN_VERSION_text_builder
-  , bench "Text.Builder" $ nf benchStrictBuilder n
+  , bench "TextBuilder" $ nf benchStrictBuilder n
 #endif
   , bench "Data.Text.Builder.Linear" $ nf benchLinearBuilder n
   ]
