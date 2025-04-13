@@ -44,7 +44,7 @@ beforehand; and inlining is mostly irrelevant.
 Exponential growth provides for amortized linear time.
 Such structure can be implemented without linear types, but that would
 greatly affect user experience by polluting everything with `ST` monad.
-Users are encouraged to use `Buffer` API, and built-in benchmarks refer to it.
+Users are encouraged to use `Buffer` API, and **built-in benchmarks refer to it.**
 
 The second interface is more traditional `newtype Builder = Builder (Buffer ⊸ Buffer)`
 with `Monoid` instance. This type provides easy migration from other builders,
