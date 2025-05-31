@@ -51,6 +51,7 @@ parseLine xs = M.singleton title (M.singleton size group)
       "TextBuilder" -> mempty { grpTextStrict = Just time }
       "ByteString.StrictBuilder" -> mempty { grpBSStrict = Just time }
       "Data.Text.Builder.Linear" -> mempty { grpLinear = Just time }
+      _ -> error $ "Unexpected group " ++ ws
 
 parseLines :: [String] -> Map Title (Map Int Group)
 parseLines xss = M.unionsWith (M.unionWith (<>)) (map parseLine xss)
@@ -114,6 +115,6 @@ showPicos4 i
 main :: IO ()
 main = do
   csv <- getContents
-  let mp = parseLines $ tail $ lines csv
+  let mp = parseLines $ drop 1 $ lines csv
   putStrLn $ dumpTextTable mp
   putStrLn $ dumpBSTable mp
