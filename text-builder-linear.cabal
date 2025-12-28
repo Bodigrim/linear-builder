@@ -99,4 +99,4 @@ benchmark linear-builder-bench
         -- text-builder >=1.0 && <1.1,
         -- text-builder-dev >=0.4 && <0.5,
         tasty,
-        tasty-bench >=0.4 && <0.5
+        tasty-bench >=0.4 && <0.6
