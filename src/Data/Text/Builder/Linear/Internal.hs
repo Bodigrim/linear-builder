@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
 --              (c) 2023 Pierre Le Marre
@@ -35,9 +37,14 @@ import Data.ByteString.Internal (ByteString (..))
 import Data.Text qualified as T
 import Data.Text.Array qualified as A
 import Data.Text.Internal (Text (..))
-import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, plusAddr#, unsafeCoerce#)
 import GHC.ForeignPtr (ForeignPtr (..), ForeignPtrContents (..))
 import GHC.ST (ST (..), runST)
+
+#if MIN_VERSION_base(4,20,0)
+import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, plusAddr#, unsafeThawByteArray#, realWorld#)
+#else
+import GHC.Exts (Int (..), Levity (..), RuntimeRep (..), TYPE, byteArrayContents#, plusAddr#, unsafeCoerce#)
+#endif
 
 import Data.Text.Builder.Linear.Array
 
@@ -108,7 +115,11 @@ runBufferBS f = case shrinkBuffer (f (Buffer memptyPinned)) of
   Buffer (Text (A.ByteArray arr) (I# from) len) → BS fp len
     where
       addr# = byteArrayContents# arr `plusAddr#` from
+#if MIN_VERSION_base(4,20,0)
+      fp = ForeignPtr addr# (PlainPtr (let !(# _, ma #) = unsafeThawByteArray# arr realWorld# in ma))
+#else
       fp = ForeignPtr addr# (PlainPtr (unsafeCoerce# arr))
+#endif
 {-# NOINLINE runBufferBS #-}
 
 shrinkBuffer ∷ Buffer ⊸ Buffer
