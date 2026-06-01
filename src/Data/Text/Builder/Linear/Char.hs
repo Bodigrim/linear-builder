@@ -100,6 +100,10 @@ unsafePrependCharM marr off c = case utf8Length c of
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> prependChars 3 'x' (b |>. 'A'))
 -- "xxxA"
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to sanitize surrogate code points with
+-- 'Data.Text.Internal.safe'.
 prependChars ∷ Word → Char → Buffer ⊸ Buffer
 prependChars count ch buff
   | count == 0 = buff
@@ -120,6 +124,10 @@ prependChars count ch buff
 -- >>> :set -XLinearTypes
 -- >>> runBuffer (\b -> appendChars 3 'x' (b |>. 'A'))
 -- "Axxx"
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to sanitize surrogate code points with
+-- 'Data.Text.Internal.safe'.
 appendChars ∷ Word → Char → Buffer ⊸ Buffer
 appendChars count ch buff
   | count == 0 = buff
@@ -164,6 +172,10 @@ appendChars count ch buff
 --
 -- >>> runBuffer (\b -> (b |> "Test:") `appendJustified` "AAA" `appendJustified` "BBBBBBB")
 -- "Test:         AAA     BBBBBBB"
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to sanitize surrogate code points with
+-- 'Data.Text.Internal.safe'.
 justifyRight ∷ Word → Char → Buffer ⊸ Buffer
 justifyRight n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →
@@ -183,6 +195,10 @@ justifyRight n ch buff = case lengthOfBuffer buff of
 --
 -- Note that 'newEmptyBuffer' is needed in some situations. See 'justifyRight'
 -- for an example.
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to sanitize surrogate code points with
+-- 'Data.Text.Internal.safe'.
 justifyLeft ∷ Word → Char → Buffer ⊸ Buffer
 justifyLeft n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →
@@ -201,6 +217,10 @@ justifyLeft n ch buff = case lengthOfBuffer buff of
 --
 -- Note that 'newEmptyBuffer' is needed in some situations. See 'justifyRight'
 -- for an example.
+--
+-- __Warning:__ In contrast to 'Data.Text.Lazy.Builder.singleton', it is the
+-- responsibility of the caller to sanitize surrogate code points with
+-- 'Data.Text.Internal.safe'.
 center ∷ Word → Char → Buffer ⊸ Buffer
 center n ch buff = case lengthOfBuffer buff of
   (# buff', len #) →

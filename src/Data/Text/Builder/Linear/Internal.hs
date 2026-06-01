@@ -158,7 +158,7 @@ memptyPinned = runST $ do
 -- "Test:         AAA     BBBBBBB"
 --
 -- Note: a previous buffer is necessary in order to create an empty buffer with
--- the same characteristics.
+-- the same pinnedness.
 newEmptyBuffer ∷ Buffer ⊸ (# Buffer, Buffer #)
 newEmptyBuffer (Buffer t@(Text arr _ _)) =
   (# Buffer t, Buffer (if isPinned arr then memptyPinned else mempty) #)

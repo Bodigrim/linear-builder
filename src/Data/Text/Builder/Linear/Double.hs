@@ -21,8 +21,6 @@ import Data.Text.Builder.Linear.Core
 
 -- | Append the decimal representation of a 'Double'.
 --
--- Matches 'show' in displaying in standard or scientific notation:
---
 -- >>> runBuffer (\b -> b |>% 123.456)
 -- "123.456"
 --
@@ -38,9 +36,6 @@ buffer |>% x =
     buffer
 
 -- | Prepend the decimal representation of a 'Double'.
---
--- Matches 'show' in displaying in standard or scientific notation
--- (see examples in @'(|>%)'@).
 (%<|) ∷ Double → Buffer ⊸ Buffer
 
 infixr 6 %<|
