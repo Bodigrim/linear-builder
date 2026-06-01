@@ -2,6 +2,8 @@ name: ci-i386
 on:
   - push
   - pull_request
+  - merge_group
+  - workflow_dispatch
 
 defaults:
   run:

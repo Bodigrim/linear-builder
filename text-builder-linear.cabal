@@ -7,7 +7,7 @@ copyright:       2022 Andrew Lelechenko
 maintainer:      Andrew Lelechenko <andrew.lelechenko@gmail.com>
 author:          Andrew Lelechenko
 tested-with:
-    ghc ==9.2.8 ghc ==9.4.8 ghc ==9.6.7 ghc ==9.8.4 ghc ==9.10.2
+    ghc ==9.2.8 ghc ==9.4.8 ghc ==9.6.7 ghc ==9.8.4 ghc ==9.10.3
     ghc ==9.12.2 ghc ==9.14.1
 
 homepage:        https://github.com/Bodigrim/linear-builder

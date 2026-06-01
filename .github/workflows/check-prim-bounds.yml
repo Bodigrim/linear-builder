@@ -2,6 +2,8 @@ name: check-prim-bounds
 on:
   - push
   - pull_request
+  - merge_group
+  - workflow_dispatch
 
 defaults:
   run:
@@ -11,19 +13,19 @@ jobs:
   bounds-checking:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
       with:
-        ghc-version: "9.10.2"
+        ghc-version: "9.14.1"
     - name: Update cabal package database
       run: cabal update
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       name: Cache cabal stuff
       with:
         path: |
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           dist-newstyle
-        key: ${{ runner.os }}-9.10.2
+        key: ${{ runner.os }}-9.14.1
     - name: Test
       run: cabal test --ghc-options='-fcheck-prim-bounds -fno-ignore-asserts' --constraint 'text +developer'
