@@ -120,7 +120,7 @@ instance Arbitrary Action where
     where
       arbitraryCharCount = chooseBoundedIntegral (0, 6)
       arbitraryTotalLength = chooseBoundedIntegral (3, 20)
-      arbitraryInteger = chooseInteger 
+      arbitraryInteger = chooseInteger
         ( fromIntegral @Int minBound ^ (3 :: Word)
         , fromIntegral @Int maxBound ^ (3 :: Word) )
 
@@ -186,12 +186,7 @@ interpretOnText xs z = foldl' go z xs
       then hexadecimal x
       else hexadecimal (fromIntegral @_ @Word64 x .&. (shiftL 1 (intSize x) - 1))
 
-    hexadecimalSW (SomeWordN x) = hexadecimalW x
-
-    hexadecimalW ∷ (KnownNat n) ⇒ WordN n → TB.Builder
-    hexadecimalW x = if x >= 0
-      then hexadecimal x
-      else hexadecimal (fromIntegral @_ @Word64 x .&. (shiftL 1 (intSize x) - 1))
+    hexadecimalSW (SomeWordN x) = hexadecimal x
 
     intersperseText ∷ [TB.Builder] → Text
     intersperseText bs =
