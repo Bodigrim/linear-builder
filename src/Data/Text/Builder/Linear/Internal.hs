@@ -220,7 +220,7 @@ lengthOfBuffer (Buffer t) = (# Buffer t, fromIntegral (T.length t) #)
 -- | Slice t'Buffer' by dropping given number of 'Char's.
 dropBuffer ∷ Word → Buffer ⊸ Buffer
 dropBuffer nChar (Buffer t@(Text arr off len))
-  | nByte <= 0 = Buffer (Text arr (off + len) 0)
+  | nByte < 0 = Buffer (Text arr (off + len) 0)
   | otherwise = Buffer (Text arr (off + nByte) (len - nByte))
   where
     nByte = T.measureOff (fromIntegral nChar) t
@@ -228,7 +228,7 @@ dropBuffer nChar (Buffer t@(Text arr off len))
 -- | Slice t'Buffer' by taking given number of 'Char's.
 takeBuffer ∷ Word → Buffer ⊸ Buffer
 takeBuffer nChar (Buffer t@(Text arr off _))
-  | nByte <= 0 = Buffer t
+  | nByte < 0 = Buffer t
   | otherwise = Buffer (Text arr off nByte)
   where
     nByte = T.measureOff (fromIntegral nChar) t

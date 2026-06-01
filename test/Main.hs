@@ -21,6 +21,7 @@ import Data.Proxy (Proxy(..))
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import Data.Text.Builder.Linear.Buffer
+import Data.Text.Builder.Linear.Core (dropBuffer, takeBuffer)
 import Data.Text.Internal (Text(..))
 import Data.Text.Lazy (toStrict)
 import Data.Text.Lazy.Builder qualified as TB
@@ -237,7 +238,24 @@ main = defaultMain $ testGroup "All"
   , testProperty "CSE 1" prop6
   , testProperty "CSE 2" prop7
   , testProperty "unbounded integers" prop8
+  , testProperty "dropBuffer" propDropBuffer
+  , testProperty "dropBuffer" propDropBuffer
+  , testProperty "takeBuffer" propTakeBuffer
   ]
+
+propDropBuffer :: Word → Text → Property
+propDropBuffer n xs =
+  suff === runBuffer (\b → dropBuffer n (b |> xs)) .&&.
+  T.encodeUtf8 suff === runBufferBS (\b → dropBuffer n (b |> xs))
+  where
+    suff = T.drop (fromIntegral n) xs
+
+propTakeBuffer :: Word → Text → Property
+propTakeBuffer n xs =
+  pref === runBuffer (\b → takeBuffer n (b |> xs)) .&&.
+  T.encodeUtf8 pref === runBufferBS (\b → takeBuffer n (b |> xs))
+  where
+    pref = T.take (fromIntegral n) xs
 
 prop1 ∷ [Action] → Property
 prop1 acts = interpretOnText acts mempty ===
