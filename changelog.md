@@ -1,6 +1,7 @@
 ## 0.1.4
 
 * Add `instance Eq Builder` and `instance Ord Builder`.
+* Fix a bug in `dropBuffer` and `takeBuffer`.
 
 ## 0.1.3
 
