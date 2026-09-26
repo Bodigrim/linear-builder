@@ -1,3 +1,5 @@
+{-# LANGUAGE CPP #-}
+
 -- |
 -- Copyright:   (c) 2022 Andrew Lelechenko
 -- Licence:     BSD3
@@ -24,6 +26,11 @@ import Data.Bits (FiniteBits)
 import Data.ByteString.Internal (ByteString (..))
 import Data.Text.Internal (Text (..))
 import GHC.Exts (Addr#, IsString (..))
+#if MIN_VERSION_base(4,17,0)
+import GHC.Exts (Multiplicity)
+#else
+import GHC.Base (Multiplicity)
+#endif
 
 import Data.Text.Builder.Linear.Buffer
 
@@ -61,12 +68,12 @@ instance Ord Builder where
 --
 -- This function has a polymorphic arrow and thus can be used both in
 -- usual and linear contexts.
-runBuilder ∷ ∀ m. Builder %m → Text
+runBuilder ∷ ∀ (m ∷ Multiplicity). Builder %m → Text
 runBuilder (Builder f) = runBuffer f
 {-# INLINE runBuilder #-}
 
 -- | Same as 'runBuilder', but returning a UTF-8 encoded strict 'ByteString'.
-runBuilderBS ∷ ∀ m. Builder %m → ByteString
+runBuilderBS ∷ ∀ (m ∷ Multiplicity). Builder %m → ByteString
 runBuilderBS (Builder f) = runBufferBS f
 {-# INLINE runBuilderBS #-}
 
